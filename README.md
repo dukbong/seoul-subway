@@ -1,27 +1,30 @@
-# seoul-subway 🚇
+# seoul-subway
 
-서울 지하철 정보 조회 스킬
+Seoul Metro information skill for Claude.
 
-## 기능
+## Features
 
-| 기능 | 설명 | 트리거 예시 |
-|------|------|-------------|
-| 실시간 도착정보 | 역별 열차 도착 예정 시간 | "강남역 도착정보" |
-| 역명 검색 | 호선, 역코드 조회 | "강남역 몇호선?" |
-| 최단경로 검색 | 출발역→도착역 경로, 소요시간, 요금 | "신도림에서 서울역" |
-| 운행 알림 | 지연, 사고, 무정차 등 이례상황 | "지하철 지연 있어?" |
+- **Real-time Arrival** - Train arrival times by station
+- **Station Search** - Line and station code lookup
+- **Route Search** - Shortest path, travel time, fare
+- **Service Alerts** - Delays, incidents, express stops
 
-## 환경변수
+## Environment Variables
 
-| 변수명 | 발급처 | 신청할 데이터 |
-|--------|--------|---------------|
-| `SEOUL_OPENAPI_KEY` | [서울 열린데이터광장](https://data.seoul.go.kr) | 실시간 지하철 인증키 |
-| `DATA_GO_KR_KEY` | [공공데이터포털](https://data.go.kr) | 서울교통공사_지하철알림정보, 서울교통공사_최단경로이동정보 |
+| Variable | Provider | Required Data |
+|----------|----------|---------------|
+| `SEOUL_OPENAPI_KEY` | [data.seoul.go.kr](https://data.seoul.go.kr) | 실시간 지하철 인증키 |
+| `DATA_GO_KR_KEY` | [data.go.kr](https://data.go.kr) | 서울교통공사_지하철알림정보, 서울교통공사_최단경로이동정보 |
 
-## 설치
+## Usage
 
-SKILL.md 파일을 스킬 디렉토리에 복사하세요.
+```
+"강남역 도착정보"
+"강남역 몇호선?"
+"신도림에서 서울역"
+"지하철 지연 있어?"
+```
 
-## 라이선스
+## License
 
 MIT
