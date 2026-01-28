@@ -1,226 +1,226 @@
 ---
 name: seoul-subway
-description: 서울 지하철 실시간 도착정보, 경로검색, 운행 알림 (Seoul Metro real-time info)
+description: Seoul Metro real-time arrival, route search, service alerts
 metadata: {"moltbot":{"emoji":"🚇","requires":{"bins":["curl","jq"]},"config":{"requiredEnv":["SEOUL_OPENAPI_KEY","DATA_GO_KR_KEY"]}}}
-homepage: https://github.com/hyeonsung/seoul-subway
+homepage: https://github.com/dukbong/seoul-subway
 user-invocable: true
 ---
 
-# 서울 지하철 스킬
+# Seoul Subway Skill
 
-서울 지하철 실시간 정보를 조회합니다.
+Query real-time Seoul Metro information.
 
-## 기능
+## Features
 
-### 1. 실시간 도착정보
-역 이름으로 열차 도착 예정 시간을 조회합니다.
+### 1. Real-time Arrival Info
+Get train arrival times by station name.
 
-**트리거 예시:**
+**Trigger examples:**
 - "강남역 도착정보"
 - "홍대입구역 언제 와?"
 - "신도림 지하철 도착"
 
-**API:** `http://swopenAPI.seoul.go.kr/api/subway/{SEOUL_OPENAPI_KEY}/json/realtimeStationArrival/{startIndex}/{endIndex}/{역이름}`
+**API:** `http://swopenAPI.seoul.go.kr/api/subway/{SEOUL_OPENAPI_KEY}/json/realtimeStationArrival/{startIndex}/{endIndex}/{stationName}`
 
-**응답 필드:**
-- `subwayId`: 호선 ID (1002=2호선, 1077=신분당선 등)
-- `trainLineNm`: 열차 운행 방향 (예: "성수행 - 역삼방면")
-- `arvlMsg2`: 도착 예정 메시지 (예: "4분 20초 후")
-- `arvlMsg3`: 현재 위치 (예: "방배")
-- `btrainSttus`: 열차 상태 (일반/급행)
-- `lstcarAt`: 막차 여부 (0: 아님, 1: 막차)
+**Response fields:**
+- `subwayId`: Line ID (1002=Line 2, 1077=Sinbundang, etc.)
+- `trainLineNm`: Train direction (e.g., "성수행 - 역삼방면")
+- `arvlMsg2`: Arrival message (e.g., "4분 20초 후")
+- `arvlMsg3`: Current location (e.g., "방배")
+- `btrainSttus`: Train type (일반/급행)
+- `lstcarAt`: Last train flag (0: No, 1: Yes)
 
-### 2. 역명 검색
-역 이름으로 호선, 역코드 등 기본 정보를 조회합니다.
+### 2. Station Search
+Get line and station code info by station name.
 
-**트리거 예시:**
+**Trigger examples:**
 - "강남역 정보"
 - "강남역 몇호선?"
 - "신도림역 검색"
 
-**API:** `http://openapi.seoul.go.kr:8088/{SEOUL_OPENAPI_KEY}/json/SearchInfoBySubwayNameService/{startIndex}/{endIndex}/{역이름}`
+**API:** `http://openapi.seoul.go.kr:8088/{SEOUL_OPENAPI_KEY}/json/SearchInfoBySubwayNameService/{startIndex}/{endIndex}/{stationName}`
 
-**응답 필드:**
-- `STATION_CD`: 역 코드
-- `STATION_NM`: 역 이름
-- `LINE_NUM`: 호선 이름 (예: "02호선", "신분당선")
-- `FR_CODE`: 외부 역 코드
+**Response fields:**
+- `STATION_CD`: Station code
+- `STATION_NM`: Station name
+- `LINE_NUM`: Line name (e.g., "02호선", "신분당선")
+- `FR_CODE`: External station code
 
-### 3. 최단경로 검색
-출발역에서 도착역까지 최단 경로를 검색합니다.
+### 3. Route Search
+Find the shortest route between stations.
 
-**트리거 예시:**
+**Trigger examples:**
 - "신도림에서 서울역"
 - "강남에서 홍대까지"
 - "잠실역에서 여의도역 어떻게 가?"
 
 **API:** `https://apis.data.go.kr/B553766/path/getShtrmPath`
 
-**필수 파라미터:**
+**Required parameters:**
 - `serviceKey`: DATA_GO_KR_KEY
-- `dptreStnNm`: 출발역명
-- `arvlStnNm`: 도착역명
-- `searchDt`: 검색일시 (yyyy-MM-dd HH:mm:ss) - **필수**
+- `dptreStnNm`: Departure station name
+- `arvlStnNm`: Arrival station name
+- `searchDt`: Search datetime (yyyy-MM-dd HH:mm:ss) - **Required**
 - `dataType`: JSON
 
-**선택 파라미터:**
-- `searchType`: duration(최소시간), distance(최단거리), transfer(최소환승)
-- `exclTrfstnNms`: 제외 환승역명 (콤마 구분)
-- `thrghStnNms`: 경유역명 (콤마 구분)
-- `schInclYn`: 열차시간표 포함 여부 (기본: Y)
+**Optional parameters:**
+- `searchType`: duration (fastest), distance (shortest), transfer (fewest transfers)
+- `exclTrfstnNms`: Excluded transfer stations (comma separated)
+- `thrghStnNms`: Via stations (comma separated)
+- `schInclYn`: Include train schedule (default: Y)
 
-**응답 필드:**
-- `totalDstc`: 총 거리 (m)
-- `totalreqHr`: 총 소요시간 (초)
-- `totalCardCrg`: 요금 (원)
-- `paths[]`: 구간별 상세 정보
-  - `dptreStn`, `arvlStn`: 출발/도착역 정보
-  - `trainno`: 열차번호
-  - `trainDptreTm`, `trainArvlTm`: 출발/도착 시간
-  - `trsitYn`: 환승 여부
+**Response fields:**
+- `totalDstc`: Total distance (m)
+- `totalreqHr`: Total time (seconds)
+- `totalCardCrg`: Fare (KRW)
+- `paths[]`: Route details
+  - `dptreStn`, `arvlStn`: Departure/arrival station info
+  - `trainno`: Train number
+  - `trainDptreTm`, `trainArvlTm`: Departure/arrival time
+  - `trsitYn`: Transfer flag
 
-### 4. 운행 알림
-지하철 지연, 사고, 무정차 등 이례상황을 조회합니다.
+### 4. Service Alerts
+Get delay, incident, and express stop information.
 
-**트리거 예시:**
+**Trigger examples:**
 - "지하철 지연 있어?"
 - "오늘 지하철 상황"
 - "지하철 운행 알림"
 
 **API:** `https://apis.data.go.kr/B553766/ntce/getNtceList`
 
-**파라미터:**
+**Parameters:**
 - `serviceKey`: DATA_GO_KR_KEY
 - `dataType`: JSON
-- `pageNo`: 페이지 번호
-- `numOfRows`: 페이지당 결과 수
-- `lineNm`: 호선명 (선택)
+- `pageNo`: Page number
+- `numOfRows`: Results per page
+- `lineNm`: Line name (optional)
 
-**응답 필드:**
-- `noftTtl`: 알림 제목
-- `noftCn`: 알림 내용
-- `noftOcrnDt`: 알림 발생 일시
-- `lineNmLst`: 해당 호선
-- `noftSeCd`: 알림 구분 코드
-- `nonstopYn`: 무정차 여부
-- `upbdnbSe`: 상행/하행
-- `xcseSitnBgngDt`, `xcseSitnEndDt`: 이례상황 시작/종료 일시
+**Response fields:**
+- `noftTtl`: Alert title
+- `noftCn`: Alert content
+- `noftOcrnDt`: Alert timestamp
+- `lineNmLst`: Affected line(s)
+- `noftSeCd`: Alert type code
+- `nonstopYn`: Non-stop flag
+- `upbdnbSe`: Up/down direction
+- `xcseSitnBgngDt`, `xcseSitnEndDt`: Incident start/end time
 
-## 환경변수
+## Environment Variables
 
-| 변수명 | 용도 | 발급처 |
-|--------|------|--------|
-| `SEOUL_OPENAPI_KEY` | 도착정보, 역검색 | data.seoul.go.kr |
-| `DATA_GO_KR_KEY` | 경로검색, 알림정보 | data.go.kr |
+| Variable | Usage | Provider |
+|----------|-------|----------|
+| `SEOUL_OPENAPI_KEY` | Arrival info, station search | data.seoul.go.kr |
+| `DATA_GO_KR_KEY` | Route search, alerts | data.go.kr |
 
-## 호선 ID 매핑
+## Line ID Mapping
 
-| 호선 | subwayId |
+| Line | subwayId |
 |------|----------|
-| 1호선 | 1001 |
-| 2호선 | 1002 |
-| 3호선 | 1003 |
-| 4호선 | 1004 |
-| 5호선 | 1005 |
-| 6호선 | 1006 |
-| 7호선 | 1007 |
-| 8호선 | 1008 |
-| 9호선 | 1009 |
-| 신분당선 | 1077 |
-| 경의중앙선 | 1063 |
-| 공항철도 | 1065 |
-| 경춘선 | 1067 |
-| 수인분당선 | 1075 |
+| Line 1 | 1001 |
+| Line 2 | 1002 |
+| Line 3 | 1003 |
+| Line 4 | 1004 |
+| Line 5 | 1005 |
+| Line 6 | 1006 |
+| Line 7 | 1007 |
+| Line 8 | 1008 |
+| Line 9 | 1009 |
+| Sinbundang | 1077 |
+| Gyeongui-Jungang | 1063 |
+| Airport Railroad | 1065 |
+| Gyeongchun | 1067 |
+| Suin-Bundang | 1075 |
 
-## 사용 예시
+## Usage Examples
 
-### 도착정보 조회
+### Get Arrival Info
 ```bash
 curl "http://swopenAPI.seoul.go.kr/api/subway/${SEOUL_OPENAPI_KEY}/json/realtimeStationArrival/0/10/강남"
 ```
 
-### 역명 검색
+### Search Station
 ```bash
 curl "http://openapi.seoul.go.kr:8088/${SEOUL_OPENAPI_KEY}/json/SearchInfoBySubwayNameService/1/10/강남"
 ```
 
-### 최단경로 검색
+### Search Route
 ```bash
-# 한글 파라미터는 --data-urlencode로 인코딩 필수
+# Korean parameters must be URL-encoded with --data-urlencode
 curl -G "https://apis.data.go.kr/B553766/path/getShtrmPath?serviceKey=${DATA_GO_KR_KEY}&dataType=JSON" \
   --data-urlencode "dptreStnNm=신도림" \
   --data-urlencode "arvlStnNm=서울역" \
   --data-urlencode "searchDt=$(date '+%Y-%m-%d %H:%M:%S')"
 ```
 
-### 운행 알림 조회
+### Get Service Alerts
 ```bash
 curl "https://apis.data.go.kr/B553766/ntce/getNtceList?serviceKey=${DATA_GO_KR_KEY}&dataType=JSON&pageNo=1&numOfRows=10"
 ```
 
-## 출력 형식 가이드
+## Output Format Guide
 
-사용자에게 응답할 때 아래 형식을 따르세요.
+Follow these formats when responding to users.
 
-### 1. 실시간 도착정보
-
-```
-🚇 강남역 도착정보
-
-| 호선 | 방향 | 도착 | 현재위치 | 열차 |
-|------|------|------|----------|------|
-| 2호선 | 성수행 | 3분 후 | 역삼 | 일반 |
-| 2호선 | 신도림행 | 5분 후 | 교대 | 급행 |
-| 신분당선 | 광교행 | 2분 후 | 양재시민의숲 | 일반 |
-
-💡 막차 정보가 있으면 "🌙 막차" 표시를 추가하세요.
-```
-
-### 2. 역명 검색
+### 1. Real-time Arrival Info
 
 ```
-📍 강남역
+[강남역 Arrival Info]
 
-| 호선 | 역코드 | 외부코드 |
-|------|--------|----------|
-| 2호선 | 222 | 0222 |
-| 신분당선 | D7 | D07 |
+| Line | Direction | Arrival | Location | Type |
+|------|-----------|---------|----------|------|
+| Line 2 | 성수행 | 3 min | 역삼 | Regular |
+| Line 2 | 신도림행 | 5 min | 교대 | Express |
+| Sinbundang | 광교행 | 2 min | 양재시민의숲 | Regular |
+
+Note: Add "Last train" indicator when applicable.
 ```
 
-### 3. 최단경로 검색
+### 2. Station Search
 
 ```
-🚇 강남 → 홍대입구
+[강남역]
 
-⏱ 38분 | 📏 22.1km | 💰 1,650원 | 🔄 환승 1회
-
-**경로:**
-1. 09:03 **강남** 출발 (2호선 성수행)
-2. 09:18 **신도림** 환승 (2호선 → 1호선)
-3. 09:42 **홍대입구** 도착
-
-💡 열차시간표가 있으면 구체적인 시간을 포함하세요.
+| Line | Station Code | External Code |
+|------|--------------|---------------|
+| Line 2 | 222 | 0222 |
+| Sinbundang | D7 | D07 |
 ```
 
-### 4. 운행 알림
+### 3. Route Search
 
 ```
-⚠️ 지하철 운행 알림
+[강남 -> 홍대입구]
 
-**[1호선]** 종로3가역 무정차 통과
-📅 15:00 ~ 15:22
-📝 코레일 열차 연기발생으로 인한 조치
+Time: 38 min | Distance: 22.1 km | Fare: 1,650 KRW | Transfers: 1
+
+Route:
+1. 09:03 Depart 강남 (Line 2 towards 성수)
+2. 09:18 Transfer at 신도림 (Line 2 -> Line 1)
+3. 09:42 Arrive 홍대입구
+
+Note: Include specific times when train schedule is available.
+```
+
+### 4. Service Alerts
+
+```
+[Service Alerts]
+
+[Line 1] 종로3가역 Non-stop
+Period: 15:00 ~ 15:22
+Reason: Due to smoke from Korail train
 
 ---
 
-**[2호선]** 정상 운행 중
+[Line 2] Normal operation
 
-💡 알림이 없으면 "✅ 현재 모든 노선 정상 운행 중입니다."로 응답하세요.
+Note: If no alerts, respond with "All lines operating normally."
 ```
 
-### 오류 응답
+### Error Response
 
 ```
-❌ 역명을 찾을 수 없습니다.
-"강남"으로 다시 검색해 보세요. (역 이름만 입력)
+Error: Station not found.
+Try searching with "강남" (station name only).
 ```
