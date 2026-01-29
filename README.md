@@ -1,6 +1,6 @@
-# seoul-metro
+# seoul-subway
 
-Seoul Metro information skill for Claude.
+Seoul Subway information skill for Claude.
 
 ## Features
 
