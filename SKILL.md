@@ -6,7 +6,7 @@ homepage: https://github.com/dukbong/seoul-metro
 user-invocable: true
 ---
 
-# Seoul Subway Skill
+# Seoul Metro Skill
 
 Query real-time Seoul Metro information.
 
