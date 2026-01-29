@@ -1,4 +1,4 @@
-# seoul-subway
+# seoul-metro
 
 Seoul Metro information skill for Claude.
 
