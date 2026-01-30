@@ -12,10 +12,10 @@ interface LogEntry {
 }
 
 export function log(entry: Omit<LogEntry, 'timestamp'>): void {
-  const logEntry: LogEntry = {
+  const logEntry = {
     timestamp: new Date().toISOString(),
     ...entry,
-  };
+  } as LogEntry;
 
   const output = JSON.stringify(logEntry);
 
