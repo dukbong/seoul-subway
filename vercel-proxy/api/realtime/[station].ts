@@ -1,4 +1,28 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { fetchWithRetry } from '../../lib/fetchWithRetry.js';
+import { createError, ErrorCodes } from '../../lib/errors.js';
+import { log } from '../../lib/logger.js';
+
+export interface RealtimeOptions {
+  start?: string;
+  end?: string;
+}
+
+/**
+ * Fetch real-time arrival data for a station (testable core logic)
+ */
+export async function getRealtimeData(
+  station: string,
+  apiKey: string,
+  options: RealtimeOptions = {}
+) {
+  const { start = '0', end = '10' } = options;
+  const encodedStation = encodeURIComponent(station);
+  const apiUrl = `http://swopenAPI.seoul.go.kr/api/subway/${apiKey}/json/realtimeStationArrival/${start}/${end}/${encodedStation}`;
+
+  const response = await fetchWithRetry(apiUrl, { timeout: 8000, retries: 2 });
+  return response.json();
+}
 
 /**
  * Real-time subway arrival information proxy
@@ -7,41 +31,58 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
  * Proxy API: /api/realtime/{station}?start=0&end=10
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Handle CORS preflight
+  const startTime = Date.now();
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json(createError(ErrorCodes.METHOD_NOT_ALLOWED, 'Method not allowed'));
   }
 
   const { station } = req.query;
-  const start = req.query.start || '0';
-  const end = req.query.end || '10';
-
   if (!station || typeof station !== 'string') {
-    return res.status(400).json({ error: 'Station parameter is required' });
+    return res.status(400).json(
+      createError(ErrorCodes.MISSING_PARAM, 'Station parameter is required', { required: ['station'] })
+    );
   }
 
   const apiKey = process.env.SEOUL_OPENAPI_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Server configuration error: API key not configured' });
+    return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
   }
 
   try {
-    const encodedStation = encodeURIComponent(station);
-    const apiUrl = `http://swopenAPI.seoul.go.kr/api/subway/${apiKey}/json/realtimeStationArrival/${start}/${end}/${encodedStation}`;
+    const data = await getRealtimeData(station, apiKey, {
+      start: req.query.start as string,
+      end: req.query.end as string,
+    });
 
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-
-    // Set cache headers (30 seconds for real-time data)
     res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+
+    log({
+      level: 'info',
+      endpoint: '/api/realtime',
+      method: req.method,
+      duration: Date.now() - startTime,
+      status: 200,
+    });
 
     return res.status(200).json(data);
   } catch (error) {
-    console.error('Error fetching realtime data:', error);
-    return res.status(500).json({ error: 'Failed to fetch realtime data' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    log({
+      level: 'error',
+      endpoint: '/api/realtime',
+      method: req.method,
+      duration: Date.now() - startTime,
+      error: errorMessage,
+    });
+
+    return res.status(500).json(
+      createError(ErrorCodes.EXTERNAL_API_ERROR, 'Failed to fetch realtime data')
+    );
   }
 }

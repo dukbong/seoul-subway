@@ -11,6 +11,6 @@
     "declaration": true,
     "resolveJsonModule": true
   },
-  "include": ["api/**/*"],
+  "include": ["api/**/*", "lib/**/*", "__tests__/**/*"],
   "exclude": ["node_modules"]
 }
