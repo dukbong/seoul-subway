@@ -1,0 +1,50 @@
+{
+  "lines": [
+    { "id": "1001", "name": "1호선", "nameEn": "Line 1", "color": "#0052A4" },
+    { "id": "1002", "name": "2호선", "nameEn": "Line 2", "color": "#00A84D" },
+    { "id": "1003", "name": "3호선", "nameEn": "Line 3", "color": "#EF7C1C" },
+    { "id": "1004", "name": "4호선", "nameEn": "Line 4", "color": "#00A5DE" },
+    { "id": "1005", "name": "5호선", "nameEn": "Line 5", "color": "#996CAC" },
+    { "id": "1006", "name": "6호선", "nameEn": "Line 6", "color": "#CD7C2F" },
+    { "id": "1007", "name": "7호선", "nameEn": "Line 7", "color": "#747F00" },
+    { "id": "1008", "name": "8호선", "nameEn": "Line 8", "color": "#E6186C" },
+    { "id": "1009", "name": "9호선", "nameEn": "Line 9", "color": "#BDB092" },
+    { "id": "1063", "name": "경의중앙선", "nameEn": "Gyeongui-Jungang Line", "color": "#77C4A3" },
+    { "id": "1065", "name": "공항철도", "nameEn": "Airport Railroad", "color": "#0090D2" },
+    { "id": "1067", "name": "경춘선", "nameEn": "Gyeongchun Line", "color": "#0C8E72" },
+    { "id": "1075", "name": "수인분당선", "nameEn": "Suin-Bundang Line", "color": "#FABE00" },
+    { "id": "1077", "name": "신분당선", "nameEn": "Sinbundang Line", "color": "#D4003B" }
+  ],
+  "idToName": {
+    "1001": "1호선",
+    "1002": "2호선",
+    "1003": "3호선",
+    "1004": "4호선",
+    "1005": "5호선",
+    "1006": "6호선",
+    "1007": "7호선",
+    "1008": "8호선",
+    "1009": "9호선",
+    "1063": "경의중앙선",
+    "1065": "공항철도",
+    "1067": "경춘선",
+    "1075": "수인분당선",
+    "1077": "신분당선"
+  },
+  "idToNameEn": {
+    "1001": "Line 1",
+    "1002": "Line 2",
+    "1003": "Line 3",
+    "1004": "Line 4",
+    "1005": "Line 5",
+    "1006": "Line 6",
+    "1007": "Line 7",
+    "1008": "Line 8",
+    "1009": "Line 9",
+    "1063": "Gyeongui-Jungang Line",
+    "1065": "Airport Railroad",
+    "1067": "Gyeongchun Line",
+    "1075": "Suin-Bundang Line",
+    "1077": "Sinbundang Line"
+  }
+}
