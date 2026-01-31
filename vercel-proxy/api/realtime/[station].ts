@@ -3,6 +3,7 @@ import { fetchWithRetry } from '../../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
 import { matchStation, suggestStations } from '../../lib/stationMatcher.js';
+import type { RealtimeApiResponse } from '../../lib/types/index.js';
 
 export interface RealtimeOptions {
   start?: string;
@@ -16,13 +17,13 @@ export async function getRealtimeData(
   station: string,
   apiKey: string,
   options: RealtimeOptions = {}
-) {
+): Promise<RealtimeApiResponse> {
   const { start = '0', end = '10' } = options;
   const encodedStation = encodeURIComponent(station);
   const apiUrl = `http://swopenAPI.seoul.go.kr/api/subway/${apiKey}/json/realtimeStationArrival/${start}/${end}/${encodedStation}`;
 
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json();
+  return response.json() as Promise<RealtimeApiResponse>;
 }
 
 /**

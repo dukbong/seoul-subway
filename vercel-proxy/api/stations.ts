@@ -3,6 +3,7 @@ import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
 import { matchStation, suggestStations } from '../lib/stationMatcher.js';
+import type { StationsApiResponse } from '../lib/types/index.js';
 
 export interface StationsOptions {
   start?: string;
@@ -16,13 +17,13 @@ export async function getStationsData(
   station: string,
   apiKey: string,
   options: StationsOptions = {}
-) {
+): Promise<StationsApiResponse> {
   const { start = '1', end = '10' } = options;
   const encodedStation = encodeURIComponent(station);
   const apiUrl = `http://openapi.seoul.go.kr:8088/${apiKey}/json/SearchInfoBySubwayNameService/${start}/${end}/${encodedStation}`;
 
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json();
+  return response.json() as Promise<StationsApiResponse>;
 }
 
 /**

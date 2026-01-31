@@ -94,7 +94,7 @@ describe('getStationsData', () => {
 
     const result = await getStationsData('없는역', 'test-api-key');
 
-    expect(result.SearchInfoBySubwayNameService.row).toEqual([]);
+    expect(result.SearchInfoBySubwayNameService!.row).toEqual([]);
   });
 
   it('should propagate fetch errors after retries exhausted', async () => {
@@ -129,6 +129,6 @@ describe('getStationsData', () => {
 
     const result = await getStationsData('강남', 'test-api-key');
 
-    expect(result.SearchInfoBySubwayNameService.row).toHaveLength(2);
+    expect(result.SearchInfoBySubwayNameService!.row).toHaveLength(2);
   });
 });

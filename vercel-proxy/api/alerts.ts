@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
+import type { AlertsApiResponse } from '../lib/types/index.js';
 
 export interface AlertsOptions {
   pageNo?: string;
@@ -12,7 +13,10 @@ export interface AlertsOptions {
 /**
  * Fetch service alerts data (testable core logic)
  */
-export async function getAlertsData(apiKey: string, options: AlertsOptions = {}) {
+export async function getAlertsData(
+  apiKey: string,
+  options: AlertsOptions = {}
+): Promise<AlertsApiResponse> {
   const { pageNo = '1', numOfRows = '10', lineNm } = options;
 
   const params = new URLSearchParams({
@@ -29,7 +33,7 @@ export async function getAlertsData(apiKey: string, options: AlertsOptions = {})
   const apiUrl = `https://apis.data.go.kr/B553766/ntce/getNtceList?${params.toString()}`;
 
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json();
+  return response.json() as Promise<AlertsApiResponse>;
 }
 
 /**

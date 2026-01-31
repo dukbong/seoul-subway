@@ -3,6 +3,7 @@ import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
 import { matchStation, suggestStations } from '../lib/stationMatcher.js';
+import type { RouteApiResponse } from '../lib/types/index.js';
 
 export interface RouteOptions {
   dptreStnNm: string;
@@ -23,7 +24,10 @@ export function getKSTDateTime(): string {
 /**
  * Fetch route data between two stations (testable core logic)
  */
-export async function getRouteData(apiKey: string, options: RouteOptions) {
+export async function getRouteData(
+  apiKey: string,
+  options: RouteOptions
+): Promise<RouteApiResponse> {
   const { dptreStnNm, arvlStnNm, searchDt, searchType } = options;
 
   const params = new URLSearchParams({
@@ -41,7 +45,7 @@ export async function getRouteData(apiKey: string, options: RouteOptions) {
   const apiUrl = `https://apis.data.go.kr/B553766/path/getShtrmPath?${params.toString()}`;
 
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json();
+  return response.json() as Promise<RouteApiResponse>;
 }
 
 /**
