@@ -1,10 +1,24 @@
 import stationNames from '../../data/station-names.json';
 
 /**
+ * Cache for normalized strings to avoid repeated computation
+ */
+const normalizeCache = new Map<string, string>();
+const CACHE_MAX_SIZE = 500;
+
+/**
  * Normalize station name: lowercase, remove spaces and special characters
+ * Results are cached for performance
  */
 function normalize(str: string): string {
-  return str.toLowerCase().replace(/[\s\-_.()]/g, '');
+  if (normalizeCache.has(str)) return normalizeCache.get(str)!;
+
+  const result = str.toLowerCase().replace(/[\s\-_.()]/g, '');
+
+  if (normalizeCache.size < CACHE_MAX_SIZE) {
+    normalizeCache.set(str, result);
+  }
+  return result;
 }
 
 // Build normalized mapping table from station-names.json
@@ -30,6 +44,21 @@ const aliases: Record<string, string> = {
   'ku': '건대입구',
   'konkuniversity': '건대입구',
   'konkuniv': '건대입구',
+  'yonsei': '신촌',
+  'yonseiuniversity': '신촌',
+  'yonseiuniv': '신촌',
+  'sogang': '신촌',
+  'soganguniversity': '신촌',
+  'soganguniv': '신촌',
+  'hanyang': '왕십리',
+  'hanyanguniversity': '왕십리',
+  'hanyanguniv': '왕십리',
+  'cau': '흑석',
+  'chunganguniversity': '흑석',
+  'chunganguniv': '흑석',
+  'skku': '혜화',
+  'sungkyunkwan': '혜화',
+  'sungkyunkwanuniversity': '혜화',
 
   // Seoul Station variations
   'seoulstation': '서울역',
@@ -42,6 +71,8 @@ const aliases: Record<string, string> = {
   'icnt2': '인천공항2터미널',
   'gimpo': '김포공항',
   'gimpoairport': '김포공항',
+  'gmp': '김포공항',
+  'icn': '인천공항1터미널',
 
   // Terminal variations
   'expressterminal': '고속터미널',
@@ -56,6 +87,8 @@ const aliases: Record<string, string> = {
   'namsan': '명동',
   'coex': '삼성',
   'lotteworld': '잠실',
+  'ddp': '동대문역사문화공원',
+  'dongdaemundesignplaza': '동대문역사문화공원',
 
   // Station suffix variations
   'gangnamstation': '강남',
@@ -88,7 +121,7 @@ export function matchStation(input: string): string | null {
   // 3. Fuzzy match with distance <= 1 (conservative typo tolerance)
   let bestMatch: { korean: string; distance: number } | null = null;
   for (const [key, korean] of normalizedMap) {
-    const dist = levenshteinDistance(normalized, key);
+    const dist = levenshteinDistance(normalized, key, 1);
     if (dist === 1 && (!bestMatch || key.length > bestMatch.korean.length)) {
       bestMatch = { korean, distance: dist };
     }
@@ -113,7 +146,7 @@ export function suggestStations(input: string, limit = 3): string[] {
   const seen = new Set<string>();
 
   for (const [key, korean] of normalizedMap) {
-    const dist = levenshteinDistance(normalized, key);
+    const dist = levenshteinDistance(normalized, key, 3);
     if (dist <= 3 && !seen.has(korean)) {
       suggestions.push({ name: korean, distance: dist });
       seen.add(korean);
@@ -128,25 +161,39 @@ export function suggestStations(input: string, limit = 3): string[] {
 
 /**
  * Calculate Levenshtein distance between two strings
+ * Optimized with O(min(n,m)) space complexity and early exit
+ * @param a - First string
+ * @param b - Second string
+ * @param threshold - Optional early exit threshold
+ * @returns Levenshtein distance (or threshold + 1 if exceeds threshold)
  */
-function levenshteinDistance(a: string, b: string): number {
-  const matrix: number[][] = Array(b.length + 1)
-    .fill(null)
-    .map(() => Array(a.length + 1).fill(null));
-
-  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-
-  for (let j = 1; j <= b.length; j++) {
-    for (let i = 1; i <= a.length; i++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,       // insertion
-        matrix[j - 1][i] + 1,       // deletion
-        matrix[j - 1][i - 1] + cost // substitution
-      );
-    }
+function levenshteinDistance(a: string, b: string, threshold?: number): number {
+  // Early exit: length difference exceeds threshold
+  if (threshold !== undefined && Math.abs(a.length - b.length) > threshold) {
+    return threshold + 1;
   }
 
-  return matrix[b.length][a.length];
+  // Ensure a is the shorter string for space optimization
+  if (a.length > b.length) {
+    [a, b] = [b, a];
+  }
+
+  // O(min(n,m)) space - use two 1D arrays instead of 2D matrix
+  let prev = Array.from({ length: a.length + 1 }, (_, i) => i);
+  let curr = new Array(a.length + 1);
+
+  for (let j = 1; j <= b.length; j++) {
+    curr[0] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[i] = Math.min(
+        curr[i - 1] + 1,      // insertion
+        prev[i] + 1,          // deletion
+        prev[i - 1] + cost    // substitution
+      );
+    }
+    [prev, curr] = [curr, prev];
+  }
+
+  return prev[a.length];
 }

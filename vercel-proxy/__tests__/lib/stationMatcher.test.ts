@@ -56,6 +56,35 @@ describe('stationMatcher', () => {
       expect(matchStation('New York')).toBeNull();
     });
 
+    it('should match with Levenshtein distance 1 (fuzzy matching)', () => {
+      // One character added
+      expect(matchStation('gangnamm')).toBe('강남');
+      // One character substituted
+      expect(matchStation('gangnem')).toBe('강남');
+      // Note: 'gangam' matches '장암' (jangam) with distance 1
+    });
+
+    it('should NOT match with Levenshtein distance > 1', () => {
+      // 2+ character difference
+      expect(matchStation('gngam')).toBeNull();
+      expect(matchStation('gngnm')).toBeNull();
+    });
+
+    it('should match new university aliases', () => {
+      expect(matchStation('yonsei')).toBe('신촌');
+      expect(matchStation('Yonsei University')).toBe('신촌');
+      expect(matchStation('sogang')).toBe('신촌');
+      expect(matchStation('hanyang')).toBe('왕십리');
+      expect(matchStation('CAU')).toBe('흑석');
+      expect(matchStation('SKKU')).toBe('혜화');
+    });
+
+    it('should match new landmark and airport aliases', () => {
+      expect(matchStation('DDP')).toBe('동대문역사문화공원');
+      expect(matchStation('GMP')).toBe('김포공항');
+      expect(matchStation('ICN')).toBe('인천공항1터미널');
+    });
+
     it('should handle special characters', () => {
       expect(matchStation('Seoul-Station')).toBe('서울역');
       expect(matchStation('Seoul_Station')).toBe('서울역');
