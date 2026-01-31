@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { matchStation, suggestStations } from '../../lib/stationMatcher.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  matchStation,
+  suggestStations,
+  suggestStationsEnhanced,
+  getEnglishName,
+  clearCaches,
+} from '../../lib/stationMatcher.js';
 
 describe('stationMatcher', () => {
   describe('matchStation', () => {
@@ -117,6 +123,103 @@ describe('stationMatcher', () => {
       const suggestions = suggestStations('samsung');
       const uniqueSuggestions = [...new Set(suggestions)];
       expect(suggestions.length).toBe(uniqueSuggestions.length);
+    });
+  });
+
+  describe('suggestStationsEnhanced', () => {
+    it('should return enhanced suggestions with Korean, English, and distance', () => {
+      const suggestions = suggestStationsEnhanced('gangnam');
+
+      expect(suggestions.length).toBeGreaterThan(0);
+      expect(suggestions[0]).toHaveProperty('korean');
+      expect(suggestions[0]).toHaveProperty('distance');
+    });
+
+    it('should include English name for known stations', () => {
+      const suggestions = suggestStationsEnhanced('gangnam');
+      const gangnamSuggestion = suggestions.find(s => s.korean === '강남');
+
+      expect(gangnamSuggestion).toBeDefined();
+      expect(gangnamSuggestion?.english).toBe('Gangnam');
+    });
+
+    it('should sort by distance (closest first)', () => {
+      const suggestions = suggestStationsEnhanced('gangna');
+
+      for (let i = 1; i < suggestions.length; i++) {
+        const curr = suggestions[i];
+        const prev = suggestions[i - 1];
+        if (curr && prev) {
+          expect(curr.distance).toBeGreaterThanOrEqual(prev.distance);
+        }
+      }
+    });
+
+    it('should return exact match with distance 0', () => {
+      const suggestions = suggestStationsEnhanced('gangnam');
+      const exactMatch = suggestions.find(s => s.korean === '강남');
+
+      expect(exactMatch).toBeDefined();
+      expect(exactMatch?.distance).toBe(0);
+    });
+
+    it('should respect limit parameter', () => {
+      const suggestions = suggestStationsEnhanced('s', 2);
+      expect(suggestions.length).toBeLessThanOrEqual(2);
+    });
+  });
+
+  describe('getEnglishName', () => {
+    it('should return English name for known Korean stations', () => {
+      expect(getEnglishName('강남')).toBe('Gangnam');
+      expect(getEnglishName('서울역')).toBe('Seoul Station');
+      expect(getEnglishName('홍대입구')).toBe('Hongdae (Hongik Univ.)');
+    });
+
+    it('should return undefined for unknown stations', () => {
+      expect(getEnglishName('없는역')).toBeUndefined();
+      expect(getEnglishName('xyz')).toBeUndefined();
+    });
+  });
+
+  describe('clearCaches', () => {
+    beforeEach(() => {
+      clearCaches();
+    });
+
+    it('should clear caches without errors', () => {
+      // Pre-populate cache
+      matchStation('Gangnam');
+      matchStation('Seoul Station');
+
+      expect(() => clearCaches()).not.toThrow();
+    });
+
+    it('should still work correctly after clearing', () => {
+      matchStation('Gangnam');
+      clearCaches();
+
+      // Should still work after cache clear
+      expect(matchStation('Gangnam')).toBe('강남');
+    });
+  });
+
+  describe('caching behavior', () => {
+    beforeEach(() => {
+      clearCaches();
+    });
+
+    it('should return consistent results for same input', () => {
+      const result1 = matchStation('Gangnam');
+      const result2 = matchStation('Gangnam');
+      expect(result1).toBe(result2);
+    });
+
+    it('should cache null results', () => {
+      const result1 = matchStation('nonexistent');
+      const result2 = matchStation('nonexistent');
+      expect(result1).toBeNull();
+      expect(result2).toBeNull();
     });
   });
 });
