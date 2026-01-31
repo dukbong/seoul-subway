@@ -55,6 +55,10 @@ describe('errors', () => {
     it('should have METHOD_NOT_ALLOWED code', () => {
       expect(ErrorCodes.METHOD_NOT_ALLOWED).toBe('METHOD_NOT_ALLOWED');
     });
+
+    it('should have INVALID_STATION code', () => {
+      expect(ErrorCodes.INVALID_STATION).toBe('INVALID_STATION_NAME');
+    });
   });
 
   describe('ApiError type', () => {

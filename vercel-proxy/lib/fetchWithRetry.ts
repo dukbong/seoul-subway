@@ -15,10 +15,10 @@ export async function fetchWithRetry(
   const { timeout = 10000, retries = 3, retryDelay = 1000, ...fetchOptions } = options;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+    try {
       const response = await fetch(url, {
         ...fetchOptions,
         signal: controller.signal,
@@ -36,6 +36,7 @@ export async function fetchWithRetry(
 
       return response;
     } catch (error) {
+      clearTimeout(timeoutId);
       if (attempt === retries) throw error;
       await sleep(retryDelay * Math.pow(2, attempt));
     }

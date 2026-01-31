@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
+import { matchStation, suggestStations } from '../lib/stationMatcher.js';
 
 export interface RouteOptions {
   dptreStnNm: string;
@@ -39,7 +40,7 @@ export async function getRouteData(apiKey: string, options: RouteOptions) {
 
   const apiUrl = `https://apis.data.go.kr/B553766/path/getShtrmPath?${params.toString()}`;
 
-  const response = await fetchWithRetry(apiUrl, { timeout: 8000, retries: 2 });
+  const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
   return response.json();
 }
 
@@ -71,6 +72,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
   }
 
+  // Normalize departure station name
+  const normalizedDeparture = matchStation(String(dptreStnNm));
+  if (!normalizedDeparture) {
+    const suggestions = suggestStations(String(dptreStnNm));
+    return res.status(400).json(
+      createError(ErrorCodes.INVALID_STATION, 'Departure station not found', {
+        input: dptreStnNm,
+        param: 'dptreStnNm',
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+        hint: 'Try Korean name directly or check spelling',
+      })
+    );
+  }
+
+  // Normalize arrival station name
+  const normalizedArrival = matchStation(String(arvlStnNm));
+  if (!normalizedArrival) {
+    const suggestions = suggestStations(String(arvlStnNm));
+    return res.status(400).json(
+      createError(ErrorCodes.INVALID_STATION, 'Arrival station not found', {
+        input: arvlStnNm,
+        param: 'arvlStnNm',
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+        hint: 'Try Korean name directly or check spelling',
+      })
+    );
+  }
+
   const apiKey = process.env.DATA_GO_KR_KEY;
   if (!apiKey) {
     return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
@@ -78,8 +107,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const data = await getRouteData(apiKey, {
-      dptreStnNm: String(dptreStnNm),
-      arvlStnNm: String(arvlStnNm),
+      dptreStnNm: normalizedDeparture,
+      arvlStnNm: normalizedArrival,
       searchDt: searchDt ? String(searchDt) : undefined,
       searchType: searchType ? String(searchType) : undefined,
     });

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
+import { matchStation, suggestStations } from '../lib/stationMatcher.js';
 
 export interface StationsOptions {
   start?: string;
@@ -20,7 +21,7 @@ export async function getStationsData(
   const encodedStation = encodeURIComponent(station);
   const apiUrl = `http://openapi.seoul.go.kr:8088/${apiKey}/json/SearchInfoBySubwayNameService/${start}/${end}/${encodedStation}`;
 
-  const response = await fetchWithRetry(apiUrl, { timeout: 8000, retries: 2 });
+  const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
   return response.json();
 }
 
@@ -49,13 +50,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
   }
 
+  // Normalize station name (supports English input, case-insensitive)
+  const normalizedStation = matchStation(station);
+  if (!normalizedStation) {
+    const suggestions = suggestStations(station);
+    return res.status(400).json(
+      createError(ErrorCodes.INVALID_STATION, 'Station not found', {
+        input: station,
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+        hint: 'Try Korean name directly or check spelling',
+      })
+    );
+  }
+
   const apiKey = process.env.SEOUL_OPENAPI_KEY;
   if (!apiKey) {
     return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
   }
 
   try {
-    const data = await getStationsData(station, apiKey, {
+    const data = await getStationsData(normalizedStation, apiKey, {
       start: start ? String(start) : undefined,
       end: end ? String(end) : undefined,
     });

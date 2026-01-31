@@ -28,7 +28,7 @@ export async function getAlertsData(apiKey: string, options: AlertsOptions = {})
 
   const apiUrl = `https://apis.data.go.kr/B553766/ntce/getNtceList?${params.toString()}`;
 
-  const response = await fetchWithRetry(apiUrl, { timeout: 8000, retries: 2 });
+  const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
   return response.json();
 }
 
