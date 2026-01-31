@@ -1,6 +1,7 @@
 ---
 name: seoul-subway
 description: Seoul Subway assistant for real-time arrivals, route planning, and service alerts (Korean/English)
+model: sonnet
 metadata: {"moltbot":{"emoji":"🚇","requires":{"bins":["curl","jq"]}}}
 homepage: https://github.com/dukbong/seoul-subway
 user-invocable: true

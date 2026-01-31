@@ -68,6 +68,7 @@ for (const [alias, korean] of Object.entries(aliases)) {
 
 /**
  * Match English station name to Korean (case-insensitive, space-insensitive)
+ * Supports fuzzy matching with Levenshtein distance <= 1
  * @param input - Station name input (English or Korean)
  * @returns Korean station name or null if not found
  */
@@ -82,6 +83,19 @@ export function matchStation(input: string): string | null {
   // 2. Korean input - return as-is
   if (/[\uAC00-\uD7AF]/.test(input)) {
     return input;
+  }
+
+  // 3. Fuzzy match with distance <= 1 (conservative typo tolerance)
+  let bestMatch: { korean: string; distance: number } | null = null;
+  for (const [key, korean] of normalizedMap) {
+    const dist = levenshteinDistance(normalized, key);
+    if (dist === 1 && (!bestMatch || key.length > bestMatch.korean.length)) {
+      bestMatch = { korean, distance: dist };
+    }
+  }
+
+  if (bestMatch) {
+    return bestMatch.korean;
   }
 
   return null;
