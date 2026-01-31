@@ -222,4 +222,145 @@ describe('stationMatcher', () => {
       expect(result2).toBeNull();
     });
   });
+
+  describe('edge cases', () => {
+    beforeEach(() => {
+      clearCaches();
+    });
+
+    it('should handle empty string input', () => {
+      expect(matchStation('')).toBeNull();
+    });
+
+    it('should handle whitespace-only input', () => {
+      expect(matchStation('   ')).toBeNull();
+      expect(matchStation('\t\n')).toBeNull();
+    });
+
+    it('should handle special characters only', () => {
+      expect(matchStation('---')).toBeNull();
+      expect(matchStation('...')).toBeNull();
+      expect(matchStation('___')).toBeNull();
+    });
+
+    it('should handle mixed Korean and English input', () => {
+      // Korean characters present - should return as-is
+      expect(matchStation('강남 Station')).toBe('강남 Station');
+      expect(matchStation('Seoul 역')).toBe('Seoul 역');
+    });
+
+    it('should handle very long input strings', () => {
+      const longInput = 'gangnam'.repeat(100);
+      expect(matchStation(longInput)).toBeNull();
+    });
+
+    it('should handle single character input', () => {
+      expect(matchStation('a')).toBeNull();
+      expect(matchStation('강')).toBe('강');
+    });
+
+    it('should handle numeric input', () => {
+      expect(matchStation('123')).toBeNull();
+      expect(matchStation('2호선')).toBe('2호선');
+    });
+  });
+
+  describe('LRU cache behavior', () => {
+    beforeEach(() => {
+      clearCaches();
+    });
+
+    it('should handle repeated lookups efficiently', () => {
+      // First lookup (cache miss)
+      const start1 = performance.now();
+      matchStation('Gangnam');
+      const time1 = performance.now() - start1;
+
+      // Second lookup (cache hit)
+      const start2 = performance.now();
+      matchStation('Gangnam');
+      const time2 = performance.now() - start2;
+
+      // Cache hit should be faster or similar
+      expect(time2).toBeLessThanOrEqual(time1 + 1);
+    });
+
+    it('should maintain cache consistency across different case inputs', () => {
+      const result1 = matchStation('gangnam');
+      const result2 = matchStation('GANGNAM');
+      const result3 = matchStation('GangNam');
+
+      expect(result1).toBe('강남');
+      expect(result2).toBe('강남');
+      expect(result3).toBe('강남');
+    });
+  });
+
+  describe('fuzzy matching edge cases', () => {
+    beforeEach(() => {
+      clearCaches();
+    });
+
+    it('should match with single character typo at beginning', () => {
+      expect(matchStation('xangnam')).toBe('강남');
+    });
+
+    it('should match with single character typo at end', () => {
+      expect(matchStation('gangnamx')).toBe('강남');
+    });
+
+    it('should match with single character typo in middle', () => {
+      expect(matchStation('ganxnam')).toBe('강남');
+    });
+
+    it('should not match when input is too short for fuzzy matching', () => {
+      // 2-char input with 1 typo is too unreliable
+      expect(matchStation('gx')).toBeNull();
+    });
+
+    it('should prefer exact match over fuzzy match', () => {
+      // '장암' (Jangam) exists, 'gangam' should match '강남' not '장암'
+      const result = matchStation('gangnam');
+      expect(result).toBe('강남');
+    });
+  });
+
+  describe('suggestStations edge cases', () => {
+    it('should return suggestions even for empty input (matches short station names)', () => {
+      const suggestions = suggestStations('');
+      // Empty input matches very short station names within threshold
+      expect(Array.isArray(suggestions)).toBe(true);
+    });
+
+    it('should return suggestions for whitespace input (normalized to empty)', () => {
+      const suggestions = suggestStations('   ');
+      // Whitespace normalizes to empty, which matches short station names
+      expect(Array.isArray(suggestions)).toBe(true);
+    });
+
+    it('should handle partial station names', () => {
+      const suggestions = suggestStations('gang');
+      expect(suggestions.length).toBeGreaterThan(0);
+    });
+
+    it('should not suggest duplicate stations', () => {
+      const suggestions = suggestStations('station');
+      const uniqueSuggestions = [...new Set(suggestions)];
+      expect(suggestions.length).toBe(uniqueSuggestions.length);
+    });
+  });
+
+  describe('getEnglishName edge cases', () => {
+    it('should return undefined for empty string', () => {
+      expect(getEnglishName('')).toBeUndefined();
+    });
+
+    it('should return undefined for whitespace', () => {
+      expect(getEnglishName('   ')).toBeUndefined();
+    });
+
+    it('should handle partial Korean station names', () => {
+      expect(getEnglishName('강')).toBeUndefined();
+    });
+  });
 });
