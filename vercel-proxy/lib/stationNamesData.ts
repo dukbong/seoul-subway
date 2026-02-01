@@ -1,5 +1,15 @@
-{
-  "englishToKorean": {
+/**
+ * Station name mappings for English to Korean and Korean to English translations.
+ * Auto-generated from data/station-names.json
+ */
+
+export interface StationNamesData {
+  englishToKorean: Record<string, string>;
+  koreanToEnglish: Record<string, string>;
+}
+
+export const stationNames: StationNamesData = {
+  englishToKorean: {
     "Seoul Station": "서울역",
     "Seoul Stn": "서울역",
     "City Hall": "시청",
@@ -148,17 +158,14 @@
     "Migeum": "미금",
     "Ori": "오리",
     "Jukjeon": "죽전",
-
     "Kangnam": "강남",
     "Shinchon": "신촌",
     "Shinsa": "신사",
-
     "Kondae": "건대입구",
     "Edae": "이대",
     "Sodae": "서울대입구",
     "Godae": "고려대",
     "Yondae": "신촌",
-
     "Garosugil": "신사",
     "Garosu-gil": "신사",
     "Bukchon": "안국",
@@ -173,15 +180,13 @@
     "Mangwon-dong": "망원",
     "Apgujeong Rodeo": "압구정로데오",
     "Apgujeong-Rodeo": "압구정로데오",
-
     "Sinyongsan": "신용산",
-
     "Eulji-ro": "을지로입구",
     "Jong-no": "종로3가",
     "Seongsu-dong": "성수",
     "Seongsudong": "성수"
   },
-  "koreanToEnglish": {
+  koreanToEnglish: {
     "서울역": "Seoul Station",
     "시청": "City Hall",
     "종각": "Jonggak",
@@ -302,11 +307,12 @@
     "미금": "Migeum",
     "오리": "Ori",
     "죽전": "Jukjeon",
-
     "서울숲": "Seoul Forest",
     "망원": "Mangwon",
     "신용산": "Sinyongsan",
     "압구정로데오": "Apgujeong Rodeo",
     "고려대": "Korea University"
   }
-}
+};
+
+export default stationNames;

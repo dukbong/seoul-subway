@@ -1,4 +1,4 @@
-import stationNames from '../data/station-names.json';
+import { stationNames } from './stationNamesData.js';
 import { MATCHER_CONFIG } from './constants.js';
 
 /**
