@@ -94,7 +94,8 @@ describe('stations handler integration', () => {
 
       expect(res._status).toBe(400);
       expect(res._data).toMatchObject({
-        code: 'VALIDATION_ERROR',
+        code: 'MISSING_PARAMETER',
+        details: { required: ['station'] },
       });
     });
 
