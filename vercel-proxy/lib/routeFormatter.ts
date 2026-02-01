@@ -40,6 +40,18 @@ function getSubwayIdFromName(lineName: string): string {
 }
 
 /**
+ * Format train time from API format (yyyyMMddHHmmss or HHmmss) to HH:MM
+ */
+function formatTrainTime(timeStr: string): string {
+  if (!timeStr || timeStr.length < 4) return '-';
+  // API returns either yyyyMMddHHmmss (14 chars) or HHmmss (6 chars)
+  const timeOnly = timeStr.length >= 14 ? timeStr.slice(8, 12) : timeStr.slice(0, 4);
+  const hours = timeOnly.slice(0, 2);
+  const minutes = timeOnly.slice(2, 4);
+  return `${hours}:${minutes}`;
+}
+
+/**
  * Get line label for display
  */
 function getLineLabel(lineName: string, lang: Language): string {
@@ -130,11 +142,14 @@ export function formatRoute(
       : `Error: Route not found.`;
   }
 
-  const { totalreqHr, totalCardCrg, paths } = data.body;
+  const { totalDstc, totalreqHr, totalCardCrg, paths } = data.body;
   const transferCount = countTransfers(paths);
 
   // Convert seconds to minutes
   const travelTimeMin = Math.ceil(totalreqHr / 60);
+
+  // Convert meters to km
+  const distanceKm = (totalDstc / 1000).toFixed(1);
 
   // Build header
   const depName = lang === 'ko' ? departureKo : (getEnglishName(departureKo) ?? departureKo);
@@ -143,19 +158,20 @@ export function formatRoute(
 
   // Build summary line
   const timeLabel = lang === 'ko' ? '소요시간' : 'Time';
+  const distanceLabel = lang === 'ko' ? '거리' : 'Distance';
   const fareLabel = lang === 'ko' ? '요금' : 'Fare';
   const transferLabel = lang === 'ko' ? '환승' : 'Transfer';
   const transferUnit = lang === 'ko' ? '회' : '';
 
-  const summary = `${timeLabel}: ${formatDuration(travelTimeMin, lang)} | ${fareLabel}: ${formatFare(totalCardCrg, lang)} | ${transferLabel}: ${transferCount}${transferUnit}`;
+  const summary = `${timeLabel}: ${formatDuration(travelTimeMin, lang)} | ${distanceLabel}: ${distanceKm}km | ${fareLabel}: ${formatFare(totalCardCrg, lang)} | ${transferLabel}: ${transferCount}${transferUnit}`;
 
   // Build visual route diagram
   const diagram = buildRouteDiagram(paths, lang);
 
   // Build detail table
   const tableHeaders = lang === 'ko'
-    ? ['구분', '역', '호선']
-    : ['Step', 'Station', 'Line'];
+    ? ['구분', '역', '호선', '시간']
+    : ['Step', 'Station', 'Line', 'Time'];
 
   const rows: string[][] = [];
 
@@ -166,10 +182,12 @@ export function formatRoute(
     const subwayId = getSubwayIdFromName(lineName);
     const emoji = getLineEmoji(subwayId);
     const lineShort = lineName.replace('호선', '');
+    const departureTime = formatTrainTime(firstPath.trainDptreTm);
     rows.push([
       lang === 'ko' ? '출발' : 'Depart',
       formatStationName(firstPath.dptreStn.stnNm, lang),
       `${emoji} ${lineShort}`,
+      departureTime,
     ]);
   }
 
@@ -180,10 +198,12 @@ export function formatRoute(
       const subwayId = getSubwayIdFromName(lineName);
       const emoji = getLineEmoji(subwayId);
       const lineShort = lineName.replace('호선', '');
+      const arrivalTime = formatTrainTime(path.trainArvlTm);
       rows.push([
         lang === 'ko' ? '환승' : 'Transfer',
         formatStationName(path.arvlStn.stnNm, lang),
         `${emoji} ${lineShort}`,
+        arrivalTime,
       ]);
     }
   }
@@ -195,10 +215,12 @@ export function formatRoute(
     const subwayId = getSubwayIdFromName(lineName);
     const emoji = getLineEmoji(subwayId);
     const lineShort = lineName.replace('호선', '');
+    const arrivalTime = formatTrainTime(lastPath.trainArvlTm);
     rows.push([
       lang === 'ko' ? '도착' : 'Arrive',
       formatStationName(lastPath.arvlStn.stnNm, lang),
       `${emoji} ${lineShort}`,
+      arrivalTime,
     ]);
   }
 

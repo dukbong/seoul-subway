@@ -10,6 +10,11 @@ Seoul Subway information skill for Claude. **No API key required!**
 - **Station Search / 역 검색** - Line and station code lookup
 - **Route Search / 경로 검색** - Shortest path, travel time, fare
 - **Service Alerts / 운행 알림** - Delays, incidents, express stops
+- **Last Train / 막차 시간** - Last train times for 28 major stations (static data)
+- **Exit Info / 출구 정보** - Exit information for 29 major tourist stations (static data)
+- **Accessibility / 접근성 정보** - Elevators, escalators, wheelchair lifts
+- **Quick Exit / 빠른하차** - Best car for facilities
+- **Restrooms / 화장실** - Restroom locations
 
 ## Usage / 사용법
 
@@ -18,6 +23,11 @@ Seoul Subway information skill for Claude. **No API key required!**
 "강남역 몇호선?" / "What line is Gangnam?"
 "신도림에서 서울역" / "Sindorim to Seoul Station"
 "지하철 지연 있어?" / "Any subway delays?"
+"홍대 막차 몇 시야?" / "Last train to Hongdae?"
+"코엑스 몇 번 출구?" / "Which exit for COEX?"
+"강남역 엘리베이터" / "Gangnam elevators"
+"강남역 빠른하차" / "Gangnam quick exit"
+"강남역 화장실" / "Gangnam restrooms"
 ```
 
 ## First Time Setup / 첫 사용 안내
@@ -49,6 +59,11 @@ User (Skill)
                           /api/route
                           /api/alerts
                           /api/stations
+                          /api/last-train/[station]   (static data)
+                          /api/exits/[station]        (static data)
+                          /api/accessibility/[station]
+                          /api/quick-exit/[station]
+                          /api/restrooms/[station]
 ```
 
 ### Proxy Endpoints
@@ -59,6 +74,11 @@ User (Skill)
 | Station Search | `GET /api/stations?station={name}` |
 | Route Search | `GET /api/route?dptreStnNm=...&arvlStnNm=...` |
 | Service Alerts | `GET /api/alerts` |
+| Last Train | `GET /api/last-train/{station}` |
+| Exit Info | `GET /api/exits/{station}` |
+| Accessibility | `GET /api/accessibility/{station}` |
+| Quick Exit | `GET /api/quick-exit/{station}` |
+| Restrooms | `GET /api/restrooms/{station}` |
 
 See [SKILL.md](./SKILL.md) for full API documentation.
 
@@ -132,7 +152,12 @@ seoul-subway/
     │   ├── realtime/[station].ts
     │   ├── route.ts
     │   ├── alerts.ts
-    │   └── stations.ts
+    │   ├── stations.ts
+    │   ├── last-train/[station].ts
+    │   ├── exits/[station].ts
+    │   ├── accessibility/[station].ts
+    │   ├── quick-exit/[station].ts
+    │   └── restrooms/[station].ts
     ├── package.json
     ├── vercel.json
     └── README.md         # Deployment guide

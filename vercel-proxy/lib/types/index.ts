@@ -21,3 +21,24 @@ export type {
   Notice,
   AlertsApiResponse,
 } from './dataGoKr.js';
+
+// Accessibility API types
+export type {
+  ElevatorLocationInfo,
+  ElevatorLocationApiResponse,
+  EscalatorLocationInfo,
+  EscalatorLocationApiResponse,
+  ElevatorOperationInfo,
+  ElevatorOperationApiResponse,
+  EscalatorOperationInfo,
+  EscalatorOperationApiResponse,
+  WheelchairLiftInfo,
+  WheelchairLiftApiResponse,
+  QuickExitInfo,
+  QuickExitApiResponse,
+  RestroomInfo,
+  RestroomApiResponse,
+  AccessibilityInfo,
+  QuickExitData,
+  RestroomData,
+} from './accessibility.js';

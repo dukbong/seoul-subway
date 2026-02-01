@@ -21,6 +21,9 @@ Query real-time Seoul Subway information. **No API key required** - uses proxy s
 | Service Alerts | Delays, incidents, non-stops | "지하철 지연 있어?" | "Any subway delays?" |
 | **Last Train** | Last train times by station | "홍대 막차 몇 시야?" | "Last train to Hongdae?" |
 | **Exit Info** | Exit numbers for landmarks | "코엑스 몇 번 출구?" | "Which exit for COEX?" |
+| **Accessibility** | Elevators, escalators, wheelchair lifts | "강남역 엘리베이터" | "Gangnam elevators" |
+| **Quick Exit** | Best car for facilities | "강남역 빠른하차" | "Gangnam quick exit" |
+| **Restrooms** | Restroom locations | "강남역 화장실" | "Gangnam restrooms" |
 
 ### Natural Language Triggers / 자연어 트리거
 
@@ -66,6 +69,30 @@ Query real-time Seoul Subway information. **No API key required** - uses proxy s
 | "DDP which exit?" | "DDP 몇 번 출구?" |
 | "Gyeongbokgung Palace exit" | "경복궁 나가는 출구" |
 
+#### Accessibility / 접근성 정보
+| English | 한국어 |
+|---------|--------|
+| "Gangnam station elevators" | "강남역 엘리베이터" |
+| "Escalators at Seoul Station" | "서울역 에스컬레이터" |
+| "Wheelchair lifts at Jamsil" | "잠실역 휠체어리프트" |
+| "Accessibility info for Hongdae" | "홍대입구 접근성 정보" |
+
+#### Quick Exit / 빠른하차
+| English | 한국어 |
+|---------|--------|
+| "Quick exit at Gangnam" | "강남역 빠른하차" |
+| "Which car for elevator?" | "엘리베이터 몇 번째 칸?" |
+| "Best car for exit 3" | "3번 출구 가까운 칸" |
+| "Fastest exit at Samsung" | "삼성역 빠른 하차 위치" |
+
+#### Restrooms / 화장실
+| English | 한국어 |
+|---------|--------|
+| "Restrooms at Gangnam" | "강남역 화장실" |
+| "Where's the bathroom at Myeongdong?" | "명동역 화장실 어디야?" |
+| "Accessible restroom at Seoul Station" | "서울역 장애인 화장실" |
+| "Baby changing station at Jamsil" | "잠실역 기저귀 교환대" |
+
 ---
 
 ## First Time Setup / 첫 사용 안내
@@ -104,6 +131,8 @@ GET /api/realtime/{station}?start=0&end=10
 | station | Yes | Station name (Korean, URL-encoded) |
 | start | No | Start index (default: 0) |
 | end | No | End index (default: 10) |
+| format | No | `formatted` (markdown, default) or `raw` (JSON) |
+| lang | No | `ko` (default) or `en` |
 
 **Response Fields**
 
@@ -113,8 +142,7 @@ GET /api/realtime/{station}?start=0&end=10
 | `trainLineNm` | Direction (e.g., "성수행 - 역삼방면") |
 | `arvlMsg2` | Arrival time (e.g., "4분 20초 후") |
 | `arvlMsg3` | Current location |
-| `btrainSttus` | Train type (일반/급행) |
-| `lstcarAt` | Last train (0=No, 1=Yes) |
+| `isFastTrain` | Fast train flag (1=급행) |
 
 **Example**
 ```bash
@@ -169,6 +197,8 @@ GET /api/route?dptreStnNm={departure}&arvlStnNm={arrival}
 | arvlStnNm | Yes | Arrival station |
 | searchDt | No | Datetime (yyyy-MM-dd HH:mm:ss) |
 | searchType | No | duration / distance / transfer |
+| format | No | `formatted` (markdown, default) or `raw` (JSON) |
+| lang | No | `ko` (default) or `en` |
 
 **Response Fields**
 
@@ -209,13 +239,11 @@ GET /api/alerts?pageNo=1&numOfRows=10&format=enhanced
 
 | Field | Description |
 |-------|-------------|
-| `noftTtl` | Alert title |
-| `noftCn` | Alert content |
-| `noftOcrnDt` | Timestamp |
-| `lineNmLst` | Affected line(s) |
-| `nonstopYn` | Non-stop flag |
-| `xcseSitnBgngDt` | Incident start |
-| `xcseSitnEndDt` | Incident end |
+| `ntceNo` | Notice number |
+| `ntceSj` | Notice title |
+| `ntceCn` | Notice content |
+| `lineNm` | Line name |
+| `regDt` | Registration date |
 
 **Response Fields (Enhanced)**
 
@@ -243,6 +271,12 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts?format=enhanced"
 
 ### 5. Last Train Time
 
+> **참고:** 이 API는 주요 역 28개의 막차 시간을 정적 데이터로 제공합니다.
+> 서울교통공사 2025년 1월 기준 데이터입니다.
+>
+> **지원 역 (28개):**
+> 강남, 홍대입구, 서울역, 명동, 경복궁, 안국, 동대문역사문화공원, 잠실, 삼성, 이태원, 신촌, 고속터미널, 김포공항, 인천공항1터미널, 인천공항2터미널, 여의도, 선릉, 종로3가, 을지로입구, 광화문, 합정, 건대입구, 왕십리, 사당, 공덕, 압구정, 청담, 양재
+
 **Endpoint**
 ```
 GET /api/last-train/{station}?direction=up&weekType=1
@@ -268,7 +302,9 @@ GET /api/last-train/{station}?direction=up&weekType=1
 | `lastTrains[].weekType` | Day type (Korean) |
 | `lastTrains[].weekTypeEn` | Day type (English) |
 | `lastTrains[].line` | Line name |
+| `lastTrains[].lineEn` | Line name (English) |
 | `lastTrains[].destination` | Final destination |
+| `lastTrains[].destinationEn` | Destination (English) |
 
 **Example**
 ```bash
@@ -286,6 +322,11 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/강남?directio
 
 ### 6. Exit Information
 
+> **참고:** 이 API는 외국인 관광객이 자주 찾는 주요 역 29개의 출구 정보를 정적 데이터로 제공합니다.
+>
+> **지원 역 (29개):**
+> 경복궁, 안국, 명동, 동대문, 동대문역사문화공원, 잠실, 강남, 삼성, 홍대입구, 서울역, 고속터미널, 김포공항, 인천공항1터미널, 인천공항2터미널, 이태원, 신촌, 건대입구, 여의도, 압구정, 청담, 광화문, 종로3가, 을지로입구, 합정, 선릉, 양재, 사당, 왕십리, 공덕
+
 **Endpoint**
 ```
 GET /api/exits/{station}
@@ -296,6 +337,16 @@ GET /api/exits/{station}
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | station | Yes | Station name (Korean or English) |
+
+**Error Response (Unsupported Station)**
+
+```json
+{
+  "code": "INVALID_STATION",
+  "message": "Exit information not available for this station",
+  "hint": "Exit information is available for major tourist stations only"
+}
+```
 
 **Response Fields**
 
@@ -317,6 +368,143 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/삼성"
 
 # English station name
 curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/Samsung"
+```
+
+---
+
+### 7. Accessibility Info
+
+**Endpoint**
+```
+GET /api/accessibility/{station}
+```
+
+**Parameters**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| station | Yes | Station name (Korean or English) |
+| type | No | `elevator`, `escalator`, `wheelchair`, or `all` (default: all) |
+| format | No | `formatted` (markdown, default) or `raw` (JSON) |
+| lang | No | `ko` (default) or `en` |
+
+**Response Fields**
+
+| Field | Description |
+|-------|-------------|
+| `station` | Station name (Korean) |
+| `stationEn` | Station name (English) |
+| `elevators.locations[].INSTL_PLACE` | Elevator location |
+| `elevators.locations[].INSTL_LT` | Floor level |
+| `elevators.locations[].GROUND_CD` | 1=above ground, 2=underground |
+| `elevators.operations[].OPER_STTUS` | Operation status (정상/고장) |
+| `escalators.locations[]` | Same structure as elevators |
+| `escalators.operations[]` | Same structure as elevators |
+| `wheelchairLifts[].INSTL_PLACE` | Wheelchair lift location |
+| `wheelchairLifts[].OPER_STTUS` | Operation status |
+
+**Example**
+```bash
+# All accessibility info
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/강남"
+
+# Elevators only
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/강남?type=elevator"
+
+# English output
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/Gangnam?lang=en"
+
+# Raw JSON
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/강남?format=raw"
+```
+
+---
+
+### 8. Quick Exit Info
+
+**Endpoint**
+```
+GET /api/quick-exit/{station}
+```
+
+**Parameters**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| station | Yes | Station name (Korean or English) |
+| facility | No | `elevator`, `escalator`, `exit`, or `all` (default: all) |
+| format | No | `formatted` (markdown, default) or `raw` (JSON) |
+| lang | No | `ko` (default) or `en` |
+
+**Response Fields**
+
+| Field | Description |
+|-------|-------------|
+| `station` | Station name (Korean) |
+| `stationEn` | Station name (English) |
+| `quickExits[].SW_NM` | Line name |
+| `quickExits[].DRTN` | Direction |
+| `quickExits[].FST_CAR_NO` | Best car number |
+| `quickExits[].EXIT_NO` | Exit number |
+| `quickExits[].STAIR_NO` | Stairs number |
+| `quickExits[].ELVTR_NO` | Elevator number |
+| `quickExits[].ESCTR_NO` | Escalator number |
+
+**Example**
+```bash
+# All quick exit info
+curl "https://vercel-proxy-henna-eight.vercel.app/api/quick-exit/강남"
+
+# Filter by elevator
+curl "https://vercel-proxy-henna-eight.vercel.app/api/quick-exit/강남?facility=elevator"
+
+# English station name
+curl "https://vercel-proxy-henna-eight.vercel.app/api/quick-exit/Gangnam"
+```
+
+---
+
+### 9. Restroom Info
+
+**Endpoint**
+```
+GET /api/restrooms/{station}
+```
+
+**Parameters**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| station | Yes | Station name (Korean or English) |
+| format | No | `formatted` (markdown, default) or `raw` (JSON) |
+| lang | No | `ko` (default) or `en` |
+
+**Response Fields**
+
+| Field | Description |
+|-------|-------------|
+| `station` | Station name (Korean) |
+| `stationEn` | Station name (English) |
+| `restrooms[].SW_NM` | Line name |
+| `restrooms[].INSTL_PLACE` | Installation location |
+| `restrooms[].INSTL_LT` | Floor level |
+| `restrooms[].GROUND_CD` | 1=above ground, 2=underground |
+| `restrooms[].GATE_INOTR_SE` | 1=inside gate, 2=outside gate |
+| `restrooms[].MLSEX_TOILET_INNB` | Male toilet count |
+| `restrooms[].WMSEX_TOILET_INNB` | Female toilet count |
+| `restrooms[].DSPSN_TOILET_INNB` | Accessible toilet count |
+| `restrooms[].BABY_CHNG_STTUS` | Baby changing station (Y/N) |
+
+**Example**
+```bash
+# Get restroom info
+curl "https://vercel-proxy-henna-eight.vercel.app/api/restrooms/강남"
+
+# English output
+curl "https://vercel-proxy-henna-eight.vercel.app/api/restrooms/Gangnam?lang=en"
+
+# Raw JSON
+curl "https://vercel-proxy-henna-eight.vercel.app/api/restrooms/강남?format=raw"
 ```
 
 ---
@@ -562,6 +750,26 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/삼성"
 curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/잠실"
 ```
 
+**Accessibility**
+```bash
+# All accessibility info
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/강남"
+# Elevators only
+curl "https://vercel-proxy-henna-eight.vercel.app/api/accessibility/강남?type=elevator"
+```
+
+**Quick Exit**
+```bash
+# Quick exit for elevators
+curl "https://vercel-proxy-henna-eight.vercel.app/api/quick-exit/강남?facility=elevator"
+```
+
+**Restrooms**
+```bash
+# Restroom locations
+curl "https://vercel-proxy-henna-eight.vercel.app/api/restrooms/강남"
+```
+
 ---
 
 ## Line Color Mapping / 노선 색상 매핑
@@ -726,6 +934,109 @@ Time: 38 min | Distance: 22.1 km | Fare: 1,650 KRW | Transfer: 1
 | #5 | COEX Mall | 3 min walk |
 | #6 | COEX Aquarium | 5 min walk |
 | #7 | Bongeunsa Temple | 10 min walk |
+```
+
+### Accessibility Info
+
+**Korean:**
+```
+[강남역 접근성 정보 Gangnam]
+
+### 🛗 엘리베이터
+
+| 호선 | 위치 | 층 | 구분 |
+|------|------|-----|------|
+| 2호선 | 대합실 | 지하 B1 | 일반 |
+| 신분당선 | 개찰구 | 지하 B2 | 일반 |
+
+**운영 현황**
+
+| 번호 | 위치 | 상태 | 운영시간 |
+|------|------|------|----------|
+| 1 | 대합실 | 🟢 정상 | 05:30 ~ 24:00 |
+
+### ↗️ 에스컬레이터
+
+| 호선 | 위치 | 층 | 구분 |
+|------|------|-----|------|
+| 2호선 | 출구 1 | 지하 B1 | 상행 |
+
+### ♿ 휠체어리프트
+
+| 호선 | 번호 | 위치 | 상태 |
+|------|------|------|------|
+| 2호선 | 1 | 3번 출구 | 🟢 정상 |
+```
+
+**English:**
+```
+[Gangnam Station Accessibility 강남역]
+
+### 🛗 Elevators
+
+| Line | Location | Floor | Type |
+|------|----------|-------|------|
+| Line 2 | Concourse | Underground B1 | General |
+
+### ↗️ Escalators
+
+| Line | Location | Floor | Type |
+|------|----------|-------|------|
+| Line 2 | Exit 1 | Underground B1 | Up |
+
+### ♿ Wheelchair Lifts
+
+| Line | No. | Location | Status |
+|------|-----|----------|--------|
+| Line 2 | 1 | Exit 3 | 🟢 Normal |
+```
+
+### Quick Exit
+
+**Korean:**
+```
+[강남역 빠른하차 정보 Gangnam]
+
+| 호선 | 방향 | 칸 | 출구 | 계단 | 엘리베이터 | 에스컬레이터 |
+|------|------|-----|------|------|------------|--------------|
+| 2호선 | 외선 | 3-2 | 1 | 1 | 1 | 1 |
+| 2호선 | 내선 | 7-1 | 5 | 2 | 2 | 2 |
+```
+
+**English:**
+```
+[Gangnam Station Quick Exit 강남역]
+
+| Line | Direction | Car | Exit | Stairs | Elevator | Escalator |
+|------|-----------|-----|------|--------|----------|-----------|
+| Line 2 | Outer | 3-2 | 1 | 1 | 1 | 1 |
+| Line 2 | Inner | 7-1 | 5 | 2 | 2 | 2 |
+```
+
+### Restrooms
+
+**Korean:**
+```
+[강남역 화장실 정보 Gangnam]
+
+| 호선 | 위치 | 층 | 개찰구 | 구분 | 변기수 | 기저귀교환대 |
+|------|------|-----|--------|------|--------|--------------|
+| 2호선 | 대합실 | 지하 B1 | 개찰구 내 | 일반 | 남 3 (소 5) 여 5 ♿ 1 | 👶 있음 |
+| 2호선 | 출구1 | 지하 B1 | 개찰구 외 | 일반 | 남 2 (소 3) 여 3 | 없음 |
+
+**요약:** 총 2개 | 개찰구 내 1개 | 개찰구 외 1개 | 장애인화장실 1개 | 기저귀교환대 있음
+```
+
+**English:**
+```
+[Gangnam Station Restrooms 강남역]
+
+| Line | Location | Floor | Gate | Type | Toilets | Baby Station |
+|------|----------|-------|------|------|---------|--------------|
+| Line 2 | Concourse | Under B1 | Inside gate | General | M:3 (U:5) W:5 ♿:1 | 👶 Yes |
+| Line 2 | Exit 1 | Under B1 | Outside gate | General | M:2 (U:3) W:3 | No |
+
+**Summary:** Total 2 | Inside gate: 1 | Outside gate: 1 | Accessible: 1 | Baby station: Yes
 ```
 
 ### Error
