@@ -19,6 +19,8 @@ Query real-time Seoul Subway information. **No API key required** - uses proxy s
 | Station Search | Line and station code lookup | "강남역 몇호선?" | "What line is Gangnam?" |
 | Route Search | Shortest path with time/fare | "신도림에서 서울역" | "Sindorim to Seoul Station" |
 | Service Alerts | Delays, incidents, non-stops | "지하철 지연 있어?" | "Any subway delays?" |
+| **Last Train** | Last train times by station | "홍대 막차 몇 시야?" | "Last train to Hongdae?" |
+| **Exit Info** | Exit numbers for landmarks | "코엑스 몇 번 출구?" | "Which exit for COEX?" |
 
 ### Natural Language Triggers / 자연어 트리거
 
@@ -47,6 +49,22 @@ Query real-time Seoul Subway information. **No API key required** - uses proxy s
 | "Any delays on Line 1?" | "1호선 지연 있어?" |
 | "Subway status" | "지하철 상황" |
 | "Line 3 alerts" | "3호선 알림" |
+
+#### Last Train / 막차 시간
+| English | 한국어 |
+|---------|--------|
+| "Last train to Gangnam?" | "강남 막차 몇 시야?" |
+| "When is the last train at Hongdae?" | "홍대입구 막차 시간" |
+| "Final train to Seoul Station" | "서울역 막차" |
+| "Last train on Saturday?" | "토요일 막차 시간" |
+
+#### Exit Info / 출구 정보
+| English | 한국어 |
+|---------|--------|
+| "Which exit for COEX?" | "코엑스 몇 번 출구?" |
+| "Exit for Lotte World" | "롯데월드 출구" |
+| "DDP which exit?" | "DDP 몇 번 출구?" |
+| "Gyeongbokgung Palace exit" | "경복궁 나가는 출구" |
 
 ---
 
@@ -175,7 +193,7 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/route?dptreStnNm=신도림
 
 **Endpoint**
 ```
-GET /api/alerts?pageNo=1&numOfRows=10
+GET /api/alerts?pageNo=1&numOfRows=10&format=enhanced
 ```
 
 **Parameters**
@@ -185,8 +203,9 @@ GET /api/alerts?pageNo=1&numOfRows=10
 | pageNo | No | Page number (default: 1) |
 | numOfRows | No | Results per page (default: 10) |
 | lineNm | No | Filter by line |
+| format | No | `default` or `enhanced` (structured response) |
 
-**Response Fields**
+**Response Fields (Default)**
 
 | Field | Description |
 |-------|-------------|
@@ -198,10 +217,139 @@ GET /api/alerts?pageNo=1&numOfRows=10
 | `xcseSitnBgngDt` | Incident start |
 | `xcseSitnEndDt` | Incident end |
 
+**Response Fields (Enhanced)**
+
+| Field | Description |
+|-------|-------------|
+| `summary.delayedLines` | Lines with delays |
+| `summary.suspendedLines` | Lines with service suspended |
+| `summary.normalLines` | Lines operating normally |
+| `alerts[].lineName` | Line name (Korean) |
+| `alerts[].lineNameEn` | Line name (English) |
+| `alerts[].status` | `normal`, `delayed`, or `suspended` |
+| `alerts[].severity` | `low`, `medium`, or `high` |
+| `alerts[].title` | Alert title |
+
 **Example**
 ```bash
+# Default format
 curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts"
+
+# Enhanced format with status summary
+curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts?format=enhanced"
 ```
+
+---
+
+### 5. Last Train Time
+
+**Endpoint**
+```
+GET /api/last-train/{station}?direction=up&weekType=1
+```
+
+**Parameters**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| station | Yes | Station name (Korean or English) |
+| direction | No | `up`, `down`, or `all` (default: all) |
+| weekType | No | `1`=Weekday, `2`=Saturday, `3`=Sunday/Holiday (default: auto) |
+
+**Response Fields**
+
+| Field | Description |
+|-------|-------------|
+| `station` | Station name (Korean) |
+| `stationEn` | Station name (English) |
+| `lastTrains[].direction` | Direction (Korean) |
+| `lastTrains[].directionEn` | Direction (English) |
+| `lastTrains[].time` | Last train time (HH:MM) |
+| `lastTrains[].weekType` | Day type (Korean) |
+| `lastTrains[].weekTypeEn` | Day type (English) |
+| `lastTrains[].line` | Line name |
+| `lastTrains[].destination` | Final destination |
+
+**Example**
+```bash
+# Auto-detect day type
+curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/홍대입구"
+
+# English station name
+curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/Hongdae"
+
+# Specific direction and day
+curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/강남?direction=up&weekType=1"
+```
+
+---
+
+### 6. Exit Information
+
+**Endpoint**
+```
+GET /api/exits/{station}
+```
+
+**Parameters**
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| station | Yes | Station name (Korean or English) |
+
+**Response Fields**
+
+| Field | Description |
+|-------|-------------|
+| `station` | Station name (Korean) |
+| `stationEn` | Station name (English) |
+| `line` | Line name |
+| `exits[].number` | Exit number |
+| `exits[].landmark` | Nearby landmark (Korean) |
+| `exits[].landmarkEn` | Nearby landmark (English) |
+| `exits[].distance` | Walking distance |
+| `exits[].facilities` | Facility types |
+
+**Example**
+```bash
+# Get COEX exit info
+curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/삼성"
+
+# English station name
+curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/Samsung"
+```
+
+---
+
+## Landmark → Station Mapping
+
+외국인 관광객이 자주 찾는 랜드마크와 해당 역 정보입니다.
+
+| Landmark | Station | Line | Exit |
+|----------|---------|------|------|
+| COEX / 코엑스 | 삼성 Samsung | 2호선 | 5-6 |
+| Lotte World / 롯데월드 | 잠실 Jamsil | 2호선 | 4 |
+| Lotte World Tower | 잠실 Jamsil | 2호선 | 3 |
+| Gyeongbokgung Palace / 경복궁 | 경복궁 Gyeongbokgung | 3호선 | 5 |
+| Changdeokgung Palace / 창덕궁 | 안국 Anguk | 3호선 | 3 |
+| DDP / 동대문디자인플라자 | 동대문역사문화공원 | 2호선 | 1 |
+| Myeongdong / 명동 | 명동 Myeongdong | 4호선 | 6 |
+| N Seoul Tower / 남산타워 | 명동 Myeongdong | 4호선 | 3 |
+| Bukchon Hanok Village | 안국 Anguk | 3호선 | 6 |
+| Insadong / 인사동 | 안국 Anguk | 3호선 | 1 |
+| Hongdae / 홍대 | 홍대입구 Hongik Univ. | 2호선 | 9 |
+| Itaewon / 이태원 | 이태원 Itaewon | 6호선 | 1 |
+| Gangnam / 강남 | 강남 Gangnam | 2호선 | 10-11 |
+| Yeouido Park / 여의도공원 | 여의도 Yeouido | 5호선 | 5 |
+| IFC Mall | 여의도 Yeouido | 5호선 | 1 |
+| 63 Building | 여의도 Yeouido | 5호선 | 3 |
+| Gwanghwamun Square / 광화문광장 | 광화문 Gwanghwamun | 5호선 | 2 |
+| Namdaemun Market / 남대문시장 | 서울역 Seoul Station | 1호선 | 10 |
+| Cheonggyecheon Stream / 청계천 | 을지로입구 Euljiro 1-ga | 2호선 | 6 |
+| Express Bus Terminal | 고속터미널 Express Terminal | 3호선 | 4,8 |
+| Gimpo Airport | 김포공항 Gimpo Airport | 5호선 | 1,3 |
+| Incheon Airport T1 | 인천공항1터미널 | 공항철도 | 1 |
+| Incheon Airport T2 | 인천공항2터미널 | 공항철도 | 1 |
 
 ---
 
@@ -394,6 +542,24 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/route?dptreStnNm=신도림
 **Service Alerts**
 ```bash
 curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts"
+# Enhanced format with delay summary
+curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts?format=enhanced"
+```
+
+**Last Train**
+```bash
+# Korean station name
+curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/홍대입구"
+# English station name
+curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/Gangnam"
+```
+
+**Exit Information**
+```bash
+# For COEX
+curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/삼성"
+# For Lotte World
+curl "https://vercel-proxy-henna-eight.vercel.app/api/exits/잠실"
 ```
 
 ---
@@ -514,6 +680,52 @@ Time: 38 min | Distance: 22.1 km | Fare: 1,650 KRW | Transfer: 1
 └─ Due to smoke from Korail train
 
 🟢 Line 2 | Normal operation
+```
+
+### Last Train
+
+**Korean:**
+```
+[홍대입구 막차 시간]
+
+| 방향 | 시간 | 종착역 | 요일 |
+|------|------|--------|------|
+| 🟢 내선순환 | 00:32 | 성수 | 평일 |
+| 🟢 외선순환 | 00:25 | 신도림 | 평일 |
+```
+
+**English:**
+```
+[Last Train - Hongik Univ.]
+
+| Direction | Time | Destination | Day |
+|-----------|------|-------------|-----|
+| 🟢 Inner Circle | 00:32 | Seongsu | Weekday |
+| 🟢 Outer Circle | 00:25 | Sindorim | Weekday |
+```
+
+### Exit Info
+
+**Korean:**
+```
+[삼성역 출구 정보]
+
+| 출구 | 시설 | 거리 |
+|------|------|------|
+| 5번 | 코엑스몰 | 도보 3분 |
+| 6번 | 코엑스 아쿠아리움 | 도보 5분 |
+| 7번 | 봉은사 | 도보 10분 |
+```
+
+**English:**
+```
+[Samsung Station Exits]
+
+| Exit | Landmark | Distance |
+|------|----------|----------|
+| #5 | COEX Mall | 3 min walk |
+| #6 | COEX Aquarium | 5 min walk |
+| #7 | Bongeunsa Temple | 10 min walk |
 ```
 
 ### Error

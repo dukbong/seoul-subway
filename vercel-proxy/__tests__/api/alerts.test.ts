@@ -137,6 +137,6 @@ describe('getAlertsData', () => {
 
     const result = await getAlertsData('test-api-key');
 
-    expect(result.ntceList).toEqual([]);
+    expect('ntceList' in result && result.ntceList).toEqual([]);
   });
 });

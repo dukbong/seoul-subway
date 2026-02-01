@@ -2,12 +2,14 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
+import { parseAlerts, type EnhancedAlertsResponse } from '../lib/alertParser.js';
 import type { AlertsApiResponse } from '../lib/types/index.js';
 
 export interface AlertsOptions {
   pageNo?: string;
   numOfRows?: string;
   lineNm?: string;
+  format?: 'default' | 'enhanced';
 }
 
 /**
@@ -16,8 +18,8 @@ export interface AlertsOptions {
 export async function getAlertsData(
   apiKey: string,
   options: AlertsOptions = {}
-): Promise<AlertsApiResponse> {
-  const { pageNo = '1', numOfRows = '10', lineNm } = options;
+): Promise<AlertsApiResponse | EnhancedAlertsResponse> {
+  const { pageNo = '1', numOfRows = '10', lineNm, format = 'default' } = options;
 
   const params = new URLSearchParams({
     serviceKey: apiKey,
@@ -33,7 +35,15 @@ export async function getAlertsData(
   const apiUrl = `https://apis.data.go.kr/B553766/ntce/getNtceList?${params.toString()}`;
 
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json() as Promise<AlertsApiResponse>;
+  const data = await response.json() as AlertsApiResponse;
+
+  // Return enhanced format if requested
+  if (format === 'enhanced') {
+    const notices = data.ntceList ?? [];
+    return parseAlerts(notices);
+  }
+
+  return data;
 }
 
 /**
@@ -59,12 +69,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { pageNo, numOfRows, lineNm } = req.query;
+    const { pageNo, numOfRows, lineNm, format } = req.query;
 
     const data = await getAlertsData(apiKey, {
       pageNo: pageNo ? String(pageNo) : undefined,
       numOfRows: numOfRows ? String(numOfRows) : undefined,
       lineNm: lineNm ? String(lineNm) : undefined,
+      format: format === 'enhanced' ? 'enhanced' : 'default',
     });
 
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');

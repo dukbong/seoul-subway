@@ -8,6 +8,8 @@ export type {
   RealtimeArrival,
   RealtimeApiError,
   RealtimeApiResponse,
+  LastTrainInfo,
+  LastTrainApiResponse,
 } from './seoulOpenApi.js';
 
 // Data.go.kr API types
