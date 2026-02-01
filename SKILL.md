@@ -271,11 +271,11 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/alerts?format=enhanced"
 
 ### 5. Last Train Time
 
-> **참고:** 이 API는 주요 역 28개의 막차 시간을 정적 데이터로 제공합니다.
+> **참고:** 이 API는 주요 역 77개의 막차 시간을 정적 데이터로 제공합니다.
 > 서울교통공사 2025년 1월 기준 데이터입니다.
 >
-> **지원 역 (28개):**
-> 강남, 홍대입구, 서울역, 명동, 경복궁, 안국, 동대문역사문화공원, 잠실, 삼성, 이태원, 신촌, 고속터미널, 김포공항, 인천공항1터미널, 인천공항2터미널, 여의도, 선릉, 종로3가, 을지로입구, 광화문, 합정, 건대입구, 왕십리, 사당, 공덕, 압구정, 청담, 양재
+> **지원 역 (77개):**
+> 가산디지털단지, 강남, 강남구청, 강변, 건대입구, 경복궁, 고속터미널, 공덕, 광나루, 광화문, 교대, 구로, 군자, 김포공항, 노량진, 당산, 대림, 동대문, 동대문역사문화공원, 디지털미디어시티, 뚝섬, 마포구청, 명동, 모란, 몽촌토성, 복정, 불광, 사가정, 사당, 삼각지, 삼성, 상봉, 서울대입구, 서울역, 선릉, 성수, 수유, 시청, 신논현, 신당, 신도림, 신사, 신촌, 안국, 압구정, 약수, 양재, 여의도, 역삼, 연신내, 영등포, 옥수, 올림픽공원, 왕십리, 용산, 을지로3가, 을지로4가, 을지로입구, 응암, 이대, 이촌, 이태원, 인천공항1터미널, 인천공항2터미널, 잠실, 정자, 종각, 종로3가, 종합운동장, 천호, 청담, 충무로, 판교, 합정, 혜화, 홍대입구, 효창공원앞
 
 **Endpoint**
 ```
@@ -322,10 +322,10 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/last-train/강남?directio
 
 ### 6. Exit Information
 
-> **참고:** 이 API는 외국인 관광객이 자주 찾는 주요 역 29개의 출구 정보를 정적 데이터로 제공합니다.
+> **참고:** 이 API는 주요 역 77개의 출구 정보를 정적 데이터로 제공합니다.
 >
-> **지원 역 (29개):**
-> 경복궁, 안국, 명동, 동대문, 동대문역사문화공원, 잠실, 강남, 삼성, 홍대입구, 서울역, 고속터미널, 김포공항, 인천공항1터미널, 인천공항2터미널, 이태원, 신촌, 건대입구, 여의도, 압구정, 청담, 광화문, 종로3가, 을지로입구, 합정, 선릉, 양재, 사당, 왕십리, 공덕
+> **지원 역 (77개):**
+> 가산디지털단지, 강남, 강남구청, 강변, 건대입구, 경복궁, 고속터미널, 공덕, 광나루, 광화문, 교대, 구로, 군자, 김포공항, 노량진, 당산, 대림, 동대문, 동대문역사문화공원, 디지털미디어시티, 뚝섬, 마포구청, 명동, 모란, 몽촌토성, 복정, 불광, 사가정, 사당, 삼각지, 삼성, 상봉, 서울대입구, 서울역, 선릉, 성수, 수유, 시청, 신논현, 신당, 신도림, 신사, 신촌, 안국, 압구정, 약수, 양재, 여의도, 역삼, 연신내, 영등포, 옥수, 올림픽공원, 왕십리, 용산, 을지로3가, 을지로4가, 을지로입구, 응암, 이대, 이촌, 이태원, 인천공항1터미널, 인천공항2터미널, 잠실, 정자, 종각, 종로3가, 종합운동장, 천호, 청담, 충무로, 판교, 합정, 혜화, 홍대입구, 효창공원앞
 
 **Endpoint**
 ```
@@ -394,14 +394,13 @@ GET /api/accessibility/{station}
 |-------|-------------|
 | `station` | Station name (Korean) |
 | `stationEn` | Station name (English) |
-| `elevators.locations[].INSTL_PLACE` | Elevator location |
-| `elevators.locations[].INSTL_LT` | Floor level |
-| `elevators.locations[].GROUND_CD` | 1=above ground, 2=underground |
-| `elevators.operations[].OPER_STTUS` | Operation status (정상/고장) |
-| `escalators.locations[]` | Same structure as elevators |
-| `escalators.operations[]` | Same structure as elevators |
-| `wheelchairLifts[].INSTL_PLACE` | Wheelchair lift location |
-| `wheelchairLifts[].OPER_STTUS` | Operation status |
+| `elevators[].lineNm` | Line name |
+| `elevators[].dtlPstn` | Detailed location |
+| `elevators[].bgngFlr` / `endFlr` | Floor level (start/end) |
+| `elevators[].bgngFlrGrndUdgdSe` | Ground/underground (지상/지하) |
+| `elevators[].oprtngSitu` | Operation status (M=normal) |
+| `escalators[]` | Same structure as elevators |
+| `wheelchairLifts[]` | Same structure as elevators |
 
 **Example**
 ```bash
@@ -442,13 +441,12 @@ GET /api/quick-exit/{station}
 |-------|-------------|
 | `station` | Station name (Korean) |
 | `stationEn` | Station name (English) |
-| `quickExits[].SW_NM` | Line name |
-| `quickExits[].DRTN` | Direction |
-| `quickExits[].FST_CAR_NO` | Best car number |
-| `quickExits[].EXIT_NO` | Exit number |
-| `quickExits[].STAIR_NO` | Stairs number |
-| `quickExits[].ELVTR_NO` | Elevator number |
-| `quickExits[].ESCTR_NO` | Escalator number |
+| `quickExits[].lineNm` | Line name |
+| `quickExits[].drtnInfo` | Direction |
+| `quickExits[].qckgffVhclDoorNo` | Best car/door number |
+| `quickExits[].plfmCmgFac` | Facility type (엘리베이터/계단/에스컬레이터) |
+| `quickExits[].upbdnbSe` | Up/down direction (상행/하행) |
+| `quickExits[].elvtrNo` | Elevator number (if applicable) |
 
 **Example**
 ```bash
@@ -485,15 +483,13 @@ GET /api/restrooms/{station}
 |-------|-------------|
 | `station` | Station name (Korean) |
 | `stationEn` | Station name (English) |
-| `restrooms[].SW_NM` | Line name |
-| `restrooms[].INSTL_PLACE` | Installation location |
-| `restrooms[].INSTL_LT` | Floor level |
-| `restrooms[].GROUND_CD` | 1=above ground, 2=underground |
-| `restrooms[].GATE_INOTR_SE` | 1=inside gate, 2=outside gate |
-| `restrooms[].MLSEX_TOILET_INNB` | Male toilet count |
-| `restrooms[].WMSEX_TOILET_INNB` | Female toilet count |
-| `restrooms[].DSPSN_TOILET_INNB` | Accessible toilet count |
-| `restrooms[].BABY_CHNG_STTUS` | Baby changing station (Y/N) |
+| `restrooms[].lineNm` | Line name |
+| `restrooms[].dtlPstn` | Detailed location |
+| `restrooms[].stnFlr` | Floor level (e.g., B1) |
+| `restrooms[].grndUdgdSe` | Ground/underground (지상/지하) |
+| `restrooms[].gateInoutSe` | Inside/outside gate (내부/외부) |
+| `restrooms[].rstrmInfo` | Restroom type info |
+| `restrooms[].whlchrAcsPsbltyYn` | Wheelchair accessible (Y/N) |
 
 **Example**
 ```bash
