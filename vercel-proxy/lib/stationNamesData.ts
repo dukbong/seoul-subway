@@ -179,7 +179,55 @@ export const stationNames = {
     "Eulji-ro": "을지로입구",
     "Jong-no": "종로3가",
     "Seongsu-dong": "성수",
-    "Seongsudong": "성수"
+    "Seongsudong": "성수",
+    // Line 2 circular stations (missing)
+    "Euljiro 4-ga": "을지로4가",
+    "Sindang": "신당",
+    "Sangwangsimni": "상왕십리",
+    "Hanyang Univ.": "한양대",
+    "Hanyang University": "한양대",
+    "Guui": "구의",
+    "Jamsil Naru": "잠실나루",
+    "Jamsilnaru": "잠실나루",
+    "Jamsil Saenae": "잠실새내",
+    "Seocho": "서초",
+    "Bangbae": "방배",
+    "Bongcheon": "봉천",
+    "Sillim": "신림",
+    "Sindaebang": "신대방",
+    "Daelim": "대림",
+    "Yeongdeungpo-gu Office": "영등포구청",
+    "Ahyeon": "아현",
+    // Line 1 stations
+    "Jongno 3(sam)-ga": "종로3가",
+    "Jongno 5(o)-ga": "종로5가",
+    "Dongmyo": "동묘앞",
+    "Sinseol-dong": "신설동",
+    "Sinseoldong": "신설동",
+    "Jegi-dong": "제기동",
+    "Jegidong": "제기동",
+    // Line 3 stations
+    "Ogeum": "오금",
+    "Daecheong": "대청",
+    "Suseo": "수서",
+    "Irwon": "일원",
+    "Daechi": "대치",
+    "Jamwon": "잠원",
+    // Line 4 stations
+    "Sungshin Women's Univ.": "성신여대입구",
+    "Sungshin Univ.": "성신여대입구",
+    "Changdong": "창동",
+    "Nowon": "노원",
+    "Danggogae": "당고개",
+    // Line 5 stations
+    "Gonghang Market": "공항시장",
+    "Gimpo International Airport": "김포공항",
+    // Line 6 stations
+    "Hangangjin": "한강진",
+    "Ssangmun": "쌍문",
+    // Line 8 stations
+    "Songpa": "송파",
+    "Garak Market": "가락시장"
   } as Record<string, string>,
   koreanToEnglish: {
     "서울역": "Seoul Station",
@@ -306,7 +354,46 @@ export const stationNames = {
     "망원": "Mangwon",
     "신용산": "Sinyongsan",
     "압구정로데오": "Apgujeong Rodeo",
-    "고려대": "Korea University"
+    "고려대": "Korea University",
+    // Line 2 circular stations
+    "을지로4가": "Euljiro 4-ga",
+    "신당": "Sindang",
+    "상왕십리": "Sangwangsimni",
+    "한양대": "Hanyang Univ.",
+    "구의": "Guui",
+    "잠실나루": "Jamsil Naru",
+    "잠실새내": "Jamsil Saenae",
+    "서초": "Seocho",
+    "방배": "Bangbae",
+    "봉천": "Bongcheon",
+    "신림": "Sillim",
+    "신대방": "Sindaebang",
+    "대림": "Daelim",
+    "영등포구청": "Yeongdeungpo-gu Office",
+    "아현": "Ahyeon",
+    // Line 1 stations
+    "동묘앞": "Dongmyo",
+    "신설동": "Sinseol-dong",
+    "제기동": "Jegi-dong",
+    // Line 3 stations
+    "오금": "Ogeum",
+    "대청": "Daecheong",
+    "수서": "Suseo",
+    "일원": "Irwon",
+    "대치": "Daechi",
+    "잠원": "Jamwon",
+    // Line 4 stations
+    "성신여대입구": "Sungshin Women's Univ.",
+    "창동": "Changdong",
+    "노원": "Nowon",
+    "당고개": "Danggogae",
+    // Line 5 stations
+    "공항시장": "Gonghang Market",
+    // Line 6 stations
+    "쌍문": "Ssangmun",
+    // Line 8 stations
+    "송파": "Songpa",
+    "가락시장": "Garak Market"
   } as Record<string, string>
 };
 

@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
-import { matchStation, suggestStations } from '../lib/stationMatcher.js';
+import { matchStation, suggestStations, suggestStationsEnhanced } from '../lib/stationMatcher.js';
 import type { RouteApiResponse } from '../lib/types/index.js';
 import { formatRoute } from '../lib/routeFormatter.js';
 import type { Language } from '../lib/formatter.js';
@@ -46,8 +46,30 @@ export async function getRouteData(
 
   const apiUrl = `https://apis.data.go.kr/B553766/path/getShtrmPath?${params.toString()}`;
 
+  log({
+    level: 'debug',
+    endpoint: '/api/route',
+    message: 'Requesting external API',
+    params: {
+      dptreStnNm,
+      arvlStnNm,
+      searchDt: searchDt || getKSTDateTime(),
+      searchType: searchType || undefined,
+    },
+  });
+
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json() as Promise<RouteApiResponse>;
+  const data = await response.json() as RouteApiResponse;
+
+  log({
+    level: 'debug',
+    endpoint: '/api/route',
+    message: 'External API response',
+    hasBody: !!data.body,
+    pathCount: data.body?.paths?.length ?? 0,
+  });
+
+  return data;
 }
 
 /**
@@ -81,12 +103,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Normalize departure station name
   const normalizedDeparture = matchStation(String(dptreStnNm));
   if (!normalizedDeparture) {
-    const suggestions = suggestStations(String(dptreStnNm));
+    const enhancedSuggestions = suggestStationsEnhanced(String(dptreStnNm));
+    const suggestions = enhancedSuggestions.map(s =>
+      s.english ? `${s.korean} (${s.english})` : s.korean
+    );
+
+    log({
+      level: 'debug',
+      endpoint: '/api/route',
+      message: 'Station match failed',
+      param: 'dptreStnNm',
+      input: dptreStnNm,
+      suggestionCount: suggestions.length,
+    });
+
     return res.status(400).json(
       createError(ErrorCodes.INVALID_STATION, 'Departure station not found', {
         input: dptreStnNm,
         param: 'dptreStnNm',
         suggestions: suggestions.length > 0 ? suggestions : undefined,
+        suggestionsDetailed: enhancedSuggestions.length > 0 ? enhancedSuggestions : undefined,
         hint: 'Try Korean name directly or check spelling',
       })
     );
@@ -95,12 +131,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Normalize arrival station name
   const normalizedArrival = matchStation(String(arvlStnNm));
   if (!normalizedArrival) {
-    const suggestions = suggestStations(String(arvlStnNm));
+    const enhancedSuggestions = suggestStationsEnhanced(String(arvlStnNm));
+    const suggestions = enhancedSuggestions.map(s =>
+      s.english ? `${s.korean} (${s.english})` : s.korean
+    );
+
+    log({
+      level: 'debug',
+      endpoint: '/api/route',
+      message: 'Station match failed',
+      param: 'arvlStnNm',
+      input: arvlStnNm,
+      suggestionCount: suggestions.length,
+    });
+
     return res.status(400).json(
       createError(ErrorCodes.INVALID_STATION, 'Arrival station not found', {
         input: arvlStnNm,
         param: 'arvlStnNm',
         suggestions: suggestions.length > 0 ? suggestions : undefined,
+        suggestionsDetailed: enhancedSuggestions.length > 0 ? enhancedSuggestions : undefined,
         hint: 'Try Korean name directly or check spelling',
       })
     );
