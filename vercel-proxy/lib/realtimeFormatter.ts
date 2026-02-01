@@ -97,8 +97,8 @@ export function formatRealtimeArrivals(
   stationKo: string,
   lang: Language
 ): string {
-  // Handle error response
-  if (data.errorMessage) {
+  // Handle error response (INFO-000 is success, not an error)
+  if (data.errorMessage && data.errorMessage.code !== 'INFO-000') {
     const errorMsg = lang === 'ko'
       ? `오류: ${data.errorMessage.message}`
       : `Error: ${data.errorMessage.message}`;

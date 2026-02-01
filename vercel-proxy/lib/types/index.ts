@@ -14,6 +14,8 @@ export type {
 
 // Data.go.kr API types
 export type {
+  RouteStation,
+  RoutePath,
   PathSegment,
   RouteApiResponse,
   Notice,

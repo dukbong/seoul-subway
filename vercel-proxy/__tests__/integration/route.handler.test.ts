@@ -209,13 +209,17 @@ describe('route handler integration', () => {
 
     it('should return formatted markdown by default', async () => {
       const mockData = {
-        result: {
-          globalTravelTime: 25,
-          globalStationCount: 10,
-          fare: 1350,
-          path: [
-            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
-            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
+        header: { resultCode: '00', resultMsg: '성공' },
+        body: {
+          totalDstc: 22100,
+          totalreqHr: 1500,
+          totalCardCrg: 1350,
+          paths: [
+            {
+              dptreStn: { stnCd: '0222', stnNo: '222', stnNm: '강남', lineNm: '2호선' },
+              arvlStn: { stnCd: '0239', stnNo: '239', stnNm: '홍대입구', lineNm: '2호선' },
+              trsitYn: 'N',
+            },
           ],
         },
       };
