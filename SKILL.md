@@ -783,7 +783,7 @@ curl "https://vercel-proxy-henna-eight.vercel.app/api/restrooms/강남"
 | 5호선 / Line 5 | Purple / 보라 | 🟣 |
 | 6호선 / Line 6 | Brown / 갈색 | 🟤 |
 | 7호선 / Line 7 | Olive / 올리브 | 🟢 |
-| 8호선 / Line 8 | Pink / 분홍 | 🩷 |
+| 8호선 / Line 8 | Pink / 분홍 | 🔴 |
 | 9호선 / Line 9 | Gold / 금색 | 🟡 |
 | 신분당선 / Sinbundang | Red / 빨강 | 🔴 |
 | 경의중앙선 / Gyeongui-Jungang | Cyan / 청록 | 🔵 |

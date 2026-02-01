@@ -345,7 +345,7 @@ describe('route handler integration', () => {
   });
 
   describe('external API error handling', () => {
-    it('should return 500 when external API fails', async () => {
+    it('should fallback to internal routing when external API fails for Seoul Metro stations', async () => {
       vi.mocked(fetch)
         .mockRejectedValueOnce(new Error('API timeout'))
         .mockRejectedValueOnce(new Error('API timeout'));
@@ -359,10 +359,9 @@ describe('route handler integration', () => {
       await vi.runAllTimersAsync();
       await promise;
 
-      expect(res._status).toBe(500);
-      expect(res._data).toMatchObject({
-        code: 'EXTERNAL_API_FAILURE',
-      });
+      // Should succeed with internal routing fallback
+      expect(res._status).toBe(200);
+      expect(res._headers['Content-Type']).toBe('text/plain; charset=utf-8');
     });
   });
 });
