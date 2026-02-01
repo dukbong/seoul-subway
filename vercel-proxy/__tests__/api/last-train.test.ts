@@ -3,230 +3,144 @@ import { getLastTrainData } from '../../api/last-train/[station].js';
 
 describe('getLastTrainData', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
-  it('should fetch last train data with default options', async () => {
-    // First call: get station code
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should fetch last train data with default options', () => {
+    // Set to weekday
+    vi.setSystemTime(new Date('2025-01-20T12:00:00+09:00')); // Monday
 
-    // Second call: get last train times
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 2,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [
-          {
-            STATION_CD: '0222',
-            STATION_NM: '강남',
-            LINE_NUM: '02호선',
-            WEEK_TAG: '1',
-            INOUT_TAG: '1',
-            FR_CODE: '222',
-            LAST_TIME: '003200',
-            LAST_STATION: '성수',
-          },
-          {
-            STATION_CD: '0222',
-            STATION_NM: '강남',
-            LINE_NUM: '02호선',
-            WEEK_TAG: '1',
-            INOUT_TAG: '2',
-            FR_CODE: '222',
-            LAST_TIME: '002500',
-            LAST_STATION: '신도림',
-          },
-        ],
-      },
-    };
-
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
-
-    const result = await getLastTrainData('강남', 'test-api-key');
+    const result = getLastTrainData('강남');
 
     expect(result.station).toBe('강남');
     expect(result.stationEn).toBe('Gangnam');
-    expect(result.lastTrains).toHaveLength(2);
-    expect(result.lastTrains[0]?.time).toBe('00:32');
-    expect(result.lastTrains[0]?.destination).toBe('성수');
+    expect(result.lastTrains.length).toBeGreaterThan(0);
+    expect(result.lastTrains[0]?.weekType).toBe('평일');
   });
 
-  it('should format time correctly', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should return correct last train times for Gangnam', () => {
+    vi.setSystemTime(new Date('2025-01-20T12:00:00+09:00')); // Monday
 
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [
-          {
-            STATION_CD: '0222',
-            STATION_NM: '강남',
-            LINE_NUM: '02호선',
-            WEEK_TAG: '1',
-            INOUT_TAG: '1',
-            FR_CODE: '222',
-            LAST_TIME: '235959',
-            LAST_STATION: '성수',
-          },
-        ],
-      },
-    };
+    const result = getLastTrainData('강남', { weekType: '1' });
 
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
+    expect(result.station).toBe('강남');
+    expect(result.stationEn).toBe('Gangnam');
+    expect(result.lastTrains.length).toBeGreaterThanOrEqual(2);
 
-    const result = await getLastTrainData('강남', 'test-api-key');
+    // Check that we have Line 2 data
+    const line2Trains = result.lastTrains.filter(t => t.line === '2호선');
+    expect(line2Trains.length).toBeGreaterThanOrEqual(2);
 
-    expect(result.lastTrains[0]?.time).toBe('23:59');
+    // Check inner circle (내선순환)
+    const innerCircle = line2Trains.find(t => t.destination === '성수');
+    expect(innerCircle).toBeDefined();
+    expect(innerCircle?.time).toBe('00:32');
   });
 
-  it('should handle direction filter (up)', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should handle direction filter (up)', () => {
+    const result = getLastTrainData('강남', { direction: 'up', weekType: '1' });
 
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [],
-      },
-    };
-
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
-
-    await getLastTrainData('강남', 'test-api-key', { direction: 'up' });
-
-    // Check that the second fetch call has direction=1 (up)
-    expect(fetch).toHaveBeenCalledTimes(2);
-    const secondCall = vi.mocked(fetch).mock.calls[1]?.[0] as string;
-    expect(secondCall).toContain('/1/10/0222/');
-    expect(secondCall).toMatch(/\/0222\/\d+\/1$/);
+    // Should only have inner circle / upbound trains
+    for (const train of result.lastTrains) {
+      expect(['상행', '내선순환'].some(d =>
+        train.direction.includes('성수') || // 내선순환 destination
+        train.direction.includes('신사') // 신분당선 상행
+      )).toBe(true);
+    }
   });
 
-  it('should handle direction filter (down)', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should handle direction filter (down)', () => {
+    const result = getLastTrainData('강남', { direction: 'down', weekType: '1' });
 
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [],
-      },
-    };
-
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
-
-    await getLastTrainData('강남', 'test-api-key', { direction: 'down' });
-
-    // Check that the second fetch call has direction=2 (down)
-    expect(fetch).toHaveBeenCalledTimes(2);
-    const secondCall = vi.mocked(fetch).mock.calls[1]?.[0] as string;
-    expect(secondCall).toMatch(/\/0222\/\d+\/2$/);
+    // Should only have outer circle / downbound trains
+    for (const train of result.lastTrains) {
+      expect(['하행', '외선순환'].some(d =>
+        train.direction.includes('신도림') || // 외선순환 destination
+        train.direction.includes('광교') // 신분당선 하행
+      )).toBe(true);
+    }
   });
 
-  it('should throw error when station code not found', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 0,
-        RESULT: { CODE: 'INFO-200', MESSAGE: 'No data' },
-        row: [],
-      },
-    };
-
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify(stationData), { status: 200 })
-    );
-
-    await expect(getLastTrainData('없는역', 'test-api-key')).rejects.toThrow('Station code not found');
+  it('should throw error when station not found', () => {
+    expect(() => getLastTrainData('없는역')).toThrow('Station not found in last train data');
   });
 
-  it('should handle empty last train list', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should handle weekType parameter (Saturday)', () => {
+    const result = getLastTrainData('강남', { weekType: '2' });
 
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 0,
-        RESULT: { CODE: 'INFO-200', MESSAGE: 'No data' },
-        row: [],
-      },
-    };
-
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
-
-    const result = await getLastTrainData('강남', 'test-api-key');
-
-    expect(result.lastTrains).toEqual([]);
+    expect(result.lastTrains[0]?.weekType).toBe('토요일');
+    expect(result.lastTrains[0]?.weekTypeEn).toBe('Saturday');
   });
 
-  it('should handle weekType parameter', async () => {
-    const stationData = {
-      SearchInfoBySubwayNameService: {
-        list_total_count: 1,
-        RESULT: { CODE: 'INFO-000', MESSAGE: 'Success' },
-        row: [{ STATION_CD: '0222', STATION_NM: '강남', LINE_NUM: '02호선', FR_CODE: '222' }],
-      },
-    };
+  it('should handle weekType parameter (Sunday)', () => {
+    const result = getLastTrainData('강남', { weekType: '3' });
 
-    const lastTrainData = {
-      SearchLastTrainTimeOfLine: {
-        list_total_count: 0,
-        RESULT: { CODE: 'INFO-200', MESSAGE: 'No data' },
-        row: [],
-      },
-    };
+    expect(result.lastTrains[0]?.weekType).toBe('일요일/공휴일');
+    expect(result.lastTrains[0]?.weekTypeEn).toBe('Sunday/Holiday');
 
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(JSON.stringify(stationData), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(lastTrainData), { status: 200 }));
+    // Sunday has earlier times
+    const line2Inner = result.lastTrains.find(t => t.line === '2호선' && t.destination === '성수');
+    expect(line2Inner?.time).toBe('00:02');
+  });
 
-    await getLastTrainData('강남', 'test-api-key', { weekType: '3' }); // Sunday
+  it('should return data for Hongdae', () => {
+    const result = getLastTrainData('홍대입구', { weekType: '1' });
 
-    // Check that the second fetch call has weekType=3
-    const secondCall = vi.mocked(fetch).mock.calls[1]?.[0] as string;
-    expect(secondCall).toContain('/0222/3/');
+    expect(result.station).toBe('홍대입구');
+    expect(result.stationEn).toBe('Hongik Univ.');
+    expect(result.lastTrains.length).toBeGreaterThan(0);
+
+    // Hongdae has multiple lines
+    const lines = [...new Set(result.lastTrains.map(t => t.line))];
+    expect(lines).toContain('2호선');
+  });
+
+  it('should return data for Seoul Station with multiple lines', () => {
+    const result = getLastTrainData('서울역', { weekType: '1' });
+
+    expect(result.station).toBe('서울역');
+    expect(result.stationEn).toBe('Seoul Station');
+
+    const lines = [...new Set(result.lastTrains.map(t => t.line))];
+    expect(lines).toContain('1호선');
+    expect(lines).toContain('4호선');
+  });
+
+  it('should auto-detect current week type', () => {
+    // Set to Saturday
+    vi.setSystemTime(new Date('2025-01-25T12:00:00+09:00')); // Saturday
+
+    const result = getLastTrainData('강남');
+    expect(result.lastTrains[0]?.weekType).toBe('토요일');
+
+    // Set to Sunday
+    vi.setSystemTime(new Date('2025-01-26T12:00:00+09:00')); // Sunday
+
+    const result2 = getLastTrainData('강남');
+    expect(result2.lastTrains[0]?.weekType).toBe('일요일/공휴일');
+  });
+
+  it('should include English translations', () => {
+    const result = getLastTrainData('강남', { weekType: '1' });
+
+    const train = result.lastTrains[0];
+    expect(train?.directionEn).toMatch(/^To /);
+    expect(train?.lineEn).toMatch(/Line \d+|Sinbundang Line/);
+    expect(train?.destinationEn).toBeTruthy();
+  });
+
+  it('should return airport line data', () => {
+    const result = getLastTrainData('인천공항1터미널', { weekType: '1' });
+
+    expect(result.station).toBe('인천공항1터미널');
+    expect(result.stationEn).toBe('Incheon Airport T1');
+
+    const airportLine = result.lastTrains.find(t => t.line === '공항철도');
+    expect(airportLine).toBeDefined();
+    expect(airportLine?.lineEn).toBe('Airport Railroad');
   });
 });

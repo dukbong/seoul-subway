@@ -1,9 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchWithRetry } from '../../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
-import { matchStation, suggestStations, getEnglishName } from '../../lib/stationMatcher.js';
-import type { StationsApiResponse, LastTrainApiResponse } from '../../lib/types/index.js';
+import { matchStation, suggestStations } from '../../lib/stationMatcher.js';
+import { lastTrainData, hasLastTrainData, getAvailableStations } from '../../data/lastTrainData.js';
 
 export interface LastTrainOptions {
   direction?: 'up' | 'down' | 'all';
@@ -26,16 +25,6 @@ interface LastTrainResponse {
   station: string;
   stationEn: string;
   lastTrains: LastTrainResult[];
-}
-
-/**
- * Convert HHMMSS to HH:MM format
- */
-function formatTime(hhmmss: string): string {
-  if (!hhmmss || hhmmss.length < 4) return hhmmss;
-  const hours = hhmmss.substring(0, 2);
-  const minutes = hhmmss.substring(2, 4);
-  return `${hours}:${minutes}`;
 }
 
 /**
@@ -67,108 +56,70 @@ function getWeekTypeLabel(weekType: string): { ko: string; en: string } {
 }
 
 /**
- * Map direction tag to Korean/English
+ * Get last train data from static data
  */
-function getDirectionLabel(inoutTag: string, lineNum: string): { ko: string; en: string } {
-  // 2호선은 내선/외선, 나머지는 상행/하행
-  if (lineNum === '02호선') {
-    return inoutTag === '1'
-      ? { ko: '내선순환', en: 'Inner Circle' }
-      : { ko: '외선순환', en: 'Outer Circle' };
-  }
-  return inoutTag === '1'
-    ? { ko: '상행', en: 'Upbound' }
-    : { ko: '하행', en: 'Downbound' };
-}
-
-/**
- * Map line number to English
- */
-function getLineEnglish(lineNum: string): string {
-  const match = lineNum.match(/(\d+)호선/);
-  if (match?.[1]) return `Line ${parseInt(match[1])}`;
-  if (lineNum.includes('신분당')) return 'Sinbundang Line';
-  if (lineNum.includes('경의') || lineNum.includes('중앙')) return 'Gyeongui-Jungang Line';
-  if (lineNum.includes('공항')) return 'Airport Railroad';
-  if (lineNum.includes('수인') || lineNum.includes('분당')) return 'Suin-Bundang Line';
-  return lineNum;
-}
-
-/**
- * Get station code by station name
- */
-async function getStationCode(
-  stationName: string,
-  apiKey: string
-): Promise<string | null> {
-  const encodedStation = encodeURIComponent(stationName);
-  const apiUrl = `http://openapi.seoul.go.kr:8088/${apiKey}/json/SearchInfoBySubwayNameService/1/1/${encodedStation}`;
-
-  const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  const data = await response.json() as StationsApiResponse;
-
-  if (data.SearchInfoBySubwayNameService?.row?.[0]) {
-    return data.SearchInfoBySubwayNameService.row[0].STATION_CD;
-  }
-  return null;
-}
-
-/**
- * Fetch last train data for a station
- */
-export async function getLastTrainData(
+export function getLastTrainData(
   station: string,
-  apiKey: string,
   options: LastTrainOptions = {}
-): Promise<LastTrainResponse> {
+): LastTrainResponse {
   const { direction = 'all', weekType = getCurrentWeekType() } = options;
 
-  // 1. Get station code first
-  const stationCode = await getStationCode(station, apiKey);
-  if (!stationCode) {
-    throw new Error('Station code not found');
+  const stationData = lastTrainData[station];
+  if (!stationData) {
+    throw new Error('Station not found in last train data');
   }
 
-  // 2. Fetch last train times
-  // direction: 0=all, 1=상행/내선, 2=하행/외선
-  const directionParam = direction === 'up' ? '1' : direction === 'down' ? '2' : '0';
-  const apiUrl = `http://openapi.seoul.go.kr:8088/${apiKey}/json/SearchLastTrainTimeOfLine/1/10/${stationCode}/${weekType}/${directionParam}`;
+  const weekLabel = getWeekTypeLabel(weekType);
+  const lastTrains: LastTrainResult[] = [];
 
-  const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  const data = await response.json() as LastTrainApiResponse;
+  for (const lineSchedule of stationData.lines) {
+    // Select schedule based on week type
+    let scheduleEntries;
+    switch (weekType) {
+      case '2':
+        scheduleEntries = lineSchedule.saturday;
+        break;
+      case '3':
+        scheduleEntries = lineSchedule.sunday;
+        break;
+      default:
+        scheduleEntries = lineSchedule.weekday;
+    }
 
-  const rows = data.SearchLastTrainTimeOfLine?.row ?? [];
-  const stationEn = getEnglishName(station) ?? station;
+    for (const entry of scheduleEntries) {
+      // Filter by direction if specified
+      if (direction === 'up') {
+        // up = 상행/내선
+        if (entry.direction !== '상행' && entry.direction !== '내선순환') continue;
+      } else if (direction === 'down') {
+        // down = 하행/외선
+        if (entry.direction !== '하행' && entry.direction !== '외선순환') continue;
+      }
 
-  const lastTrains: LastTrainResult[] = rows.map(row => {
-    const dirLabel = getDirectionLabel(row.INOUT_TAG, row.LINE_NUM);
-    const weekLabel = getWeekTypeLabel(row.WEEK_TAG);
-    const destinationEn = getEnglishName(row.LAST_STATION) ?? row.LAST_STATION;
-
-    return {
-      direction: `${row.LAST_STATION}방면`,
-      directionEn: `To ${destinationEn}`,
-      time: formatTime(row.LAST_TIME),
-      weekType: weekLabel.ko,
-      weekTypeEn: weekLabel.en,
-      line: row.LINE_NUM,
-      lineEn: getLineEnglish(row.LINE_NUM),
-      destination: row.LAST_STATION,
-      destinationEn,
-    };
-  });
+      lastTrains.push({
+        direction: `${entry.destination}방면`,
+        directionEn: `To ${entry.destinationEn}`,
+        time: entry.time,
+        weekType: weekLabel.ko,
+        weekTypeEn: weekLabel.en,
+        line: lineSchedule.line,
+        lineEn: lineSchedule.lineEn,
+        destination: entry.destination,
+        destinationEn: entry.destinationEn,
+      });
+    }
+  }
 
   return {
     station,
-    stationEn,
+    stationEn: stationData.stationEn,
     lastTrains,
   };
 }
 
 /**
- * Last train time proxy
+ * Last train time API using static data
  *
- * Original API: http://openapi.seoul.go.kr:8088/{KEY}/json/SearchLastTrainTimeOfLine/{start}/{end}/{stationCode}/{weekType}/{inoutTag}
  * Proxy API: /api/last-train/{station}?direction=up&weekType=1
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -202,21 +153,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
   }
 
-  const apiKey = process.env.SEOUL_OPENAPI_KEY;
-  if (!apiKey) {
-    return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
+  // Check if station has static data
+  if (!hasLastTrainData(normalizedStation)) {
+    const availableStations = getAvailableStations();
+    return res.status(404).json(
+      createError(ErrorCodes.STATION_NOT_FOUND, 'Last train data not available for this station', {
+        input: station,
+        normalized: normalizedStation,
+        availableStations: availableStations.slice(0, 10),
+        hint: 'Last train data is available for major stations only',
+      })
+    );
   }
 
   try {
     const { direction, weekType } = req.query;
 
-    const data = await getLastTrainData(normalizedStation, apiKey, {
+    const data = getLastTrainData(normalizedStation, {
       direction: direction === 'up' || direction === 'down' ? direction : 'all',
       weekType: weekType === '1' || weekType === '2' || weekType === '3' ? weekType : undefined,
     });
 
-    // Cache for 1 hour (막차 시간표는 자주 변경되지 않음)
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+    // Cache for 1 day (static data, very rarely changes)
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800');
 
     log({
       level: 'info',

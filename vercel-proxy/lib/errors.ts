@@ -33,6 +33,10 @@ const ErrorMessages: Record<string, { en: string; ko: string }> = {
     en: 'Station not found',
     ko: '역을 찾을 수 없습니다',
   },
+  STATION_NOT_FOUND: {
+    en: 'Data not available for this station',
+    ko: '해당 역의 데이터가 없습니다',
+  },
   RATE_LIMIT_EXCEEDED: {
     en: 'Too many requests. Please try again later.',
     ko: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
@@ -86,6 +90,7 @@ export const ErrorCodes = {
   TIMEOUT: 'REQUEST_TIMEOUT',
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
   INVALID_STATION: 'INVALID_STATION_NAME',
+  STATION_NOT_FOUND: 'STATION_NOT_FOUND',
   RATE_LIMIT: 'RATE_LIMIT_EXCEEDED',
   CIRCUIT_OPEN: 'CIRCUIT_OPEN',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
