@@ -5,9 +5,7 @@
 import type {
   AccessibilityInfo,
   ElevatorLocationInfo,
-  ElevatorOperationInfo,
   EscalatorLocationInfo,
-  EscalatorOperationInfo,
   WheelchairLiftInfo,
   QuickExitInfo,
   QuickExitData,
@@ -15,33 +13,26 @@ import type {
 import { type Language, createMarkdownTable } from './formatter.js';
 
 /**
- * Format ground code to readable text
- */
-function formatGroundCode(code: string, lang: Language): string {
-  if (code === '1') return lang === 'ko' ? '지상' : 'Above ground';
-  if (code === '2') return lang === 'ko' ? '지하' : 'Underground';
-  return code;
-}
-
-/**
  * Format operation status
  */
 function formatOperationStatus(status: string, lang: Language): string {
   const statusMap: Record<string, { ko: string; en: string }> = {
+    M: { ko: '🟢 정상', en: '🟢 Normal' },
     정상: { ko: '🟢 정상', en: '🟢 Normal' },
+    S: { ko: '🔴 고장', en: '🔴 Out of order' },
     고장: { ko: '🔴 고장', en: '🔴 Out of order' },
+    P: { ko: '🟡 점검', en: '🟡 Maintenance' },
     점검: { ko: '🟡 점검', en: '🟡 Maintenance' },
-    운휴: { ko: '⚫ 운휴', en: '⚫ Not operating' },
   };
   const mapped = statusMap[status];
   if (mapped) return lang === 'ko' ? mapped.ko : mapped.en;
-  return status;
+  return status || '-';
 }
 
 /**
  * Format elevator locations to markdown table
  */
-function formatElevatorLocations(
+function formatElevators(
   elevators: ElevatorLocationInfo[],
   lang: Language
 ): string {
@@ -50,45 +41,15 @@ function formatElevatorLocations(
   }
 
   const headers = lang === 'ko'
-    ? ['호선', '위치', '층', '구분']
-    : ['Line', 'Location', 'Floor', 'Type'];
+    ? ['호선', '위치', '층', '상태']
+    : ['Line', 'Location', 'Floor', 'Status'];
 
   const rows = elevators.map(e => [
-    e.SW_NM || '-',
-    e.INSTL_PLACE || '-',
-    `${formatGroundCode(e.GROUND_CD, lang)} ${e.INSTL_LT || ''}`,
-    e.ELVTR_SE || '-',
+    e.lineNm || '-',
+    e.dtlPstn || e.vcntEntrcNo || '-',
+    `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
+    formatOperationStatus(e.oprtngSitu, lang),
   ]);
-
-  return createMarkdownTable(headers, rows);
-}
-
-/**
- * Format elevator operations with status
- */
-function formatElevatorOperations(
-  operations: ElevatorOperationInfo[],
-  lang: Language
-): string {
-  if (operations.length === 0) {
-    return '';
-  }
-
-  const headers = lang === 'ko'
-    ? ['번호', '위치', '상태', '운영시간']
-    : ['No.', 'Location', 'Status', 'Hours'];
-
-  const rows = operations.map(e => {
-    const hours = e.OPER_BGNG_TM && e.OPER_END_TM
-      ? `${e.OPER_BGNG_TM} ~ ${e.OPER_END_TM}`
-      : '-';
-    return [
-      e.ELVTR_NO || '-',
-      e.INSTL_PLACE || '-',
-      formatOperationStatus(e.OPER_STTUS, lang),
-      hours,
-    ];
-  });
 
   return createMarkdownTable(headers, rows);
 }
@@ -96,7 +57,7 @@ function formatElevatorOperations(
 /**
  * Format escalator locations to markdown table
  */
-function formatEscalatorLocations(
+function formatEscalators(
   escalators: EscalatorLocationInfo[],
   lang: Language
 ): string {
@@ -105,45 +66,15 @@ function formatEscalatorLocations(
   }
 
   const headers = lang === 'ko'
-    ? ['호선', '위치', '층', '구분']
-    : ['Line', 'Location', 'Floor', 'Type'];
+    ? ['호선', '위치', '층', '상태']
+    : ['Line', 'Location', 'Floor', 'Status'];
 
   const rows = escalators.map(e => [
-    e.SW_NM || '-',
-    e.INSTL_PLACE || '-',
-    `${formatGroundCode(e.GROUND_CD, lang)} ${e.INSTL_LT || ''}`,
-    e.ESCTR_SE || '-',
+    e.lineNm || '-',
+    e.dtlPstn || e.vcntEntrcNo || '-',
+    `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
+    formatOperationStatus(e.oprtngSitu, lang),
   ]);
-
-  return createMarkdownTable(headers, rows);
-}
-
-/**
- * Format escalator operations with status
- */
-function formatEscalatorOperations(
-  operations: EscalatorOperationInfo[],
-  lang: Language
-): string {
-  if (operations.length === 0) {
-    return '';
-  }
-
-  const headers = lang === 'ko'
-    ? ['번호', '위치', '상태', '운영시간']
-    : ['No.', 'Location', 'Status', 'Hours'];
-
-  const rows = operations.map(e => {
-    const hours = e.OPER_BGNG_TM && e.OPER_END_TM
-      ? `${e.OPER_BGNG_TM} ~ ${e.OPER_END_TM}`
-      : '-';
-    return [
-      e.ESCTR_NO || '-',
-      e.INSTL_PLACE || '-',
-      formatOperationStatus(e.OPER_STTUS, lang),
-      hours,
-    ];
-  });
 
   return createMarkdownTable(headers, rows);
 }
@@ -160,14 +91,13 @@ function formatWheelchairLifts(
   }
 
   const headers = lang === 'ko'
-    ? ['호선', '번호', '위치', '상태']
-    : ['Line', 'No.', 'Location', 'Status'];
+    ? ['호선', '위치', '상태']
+    : ['Line', 'Location', 'Status'];
 
   const rows = lifts.map(l => [
-    l.SW_NM || '-',
-    l.WHCLLIFT_NO || '-',
-    l.INSTL_PLACE || '-',
-    formatOperationStatus(l.OPER_STTUS, lang),
+    l.lineNm || '-',
+    l.dtlPstn || '-',
+    formatOperationStatus(l.oprtngSitu, lang),
   ]);
 
   return createMarkdownTable(headers, rows);
@@ -192,15 +122,7 @@ export function formatAccessibilityInfo(
     sections.push('');
     sections.push(elevatorTitle);
     sections.push('');
-    sections.push(formatElevatorLocations(data.elevators.locations, lang));
-
-    if (data.elevators.operations.length > 0) {
-      const opTitle = lang === 'ko' ? '**운영 현황**' : '**Operation Status**';
-      sections.push('');
-      sections.push(opTitle);
-      sections.push('');
-      sections.push(formatElevatorOperations(data.elevators.operations, lang));
-    }
+    sections.push(formatElevators(data.elevators, lang));
   }
 
   if (type === 'all' || type === 'escalator') {
@@ -208,15 +130,7 @@ export function formatAccessibilityInfo(
     sections.push('');
     sections.push(escalatorTitle);
     sections.push('');
-    sections.push(formatEscalatorLocations(data.escalators.locations, lang));
-
-    if (data.escalators.operations.length > 0) {
-      const opTitle = lang === 'ko' ? '**운영 현황**' : '**Operation Status**';
-      sections.push('');
-      sections.push(opTitle);
-      sections.push('');
-      sections.push(formatEscalatorOperations(data.escalators.operations, lang));
-    }
+    sections.push(formatEscalators(data.escalators, lang));
   }
 
   if (type === 'all' || type === 'wheelchair') {
@@ -253,9 +167,9 @@ export function formatQuickExitInfo(
   let filtered = data.quickExits;
   if (facility !== 'all') {
     filtered = data.quickExits.filter(q => {
-      if (facility === 'elevator') return q.ELVTR_NO && q.ELVTR_NO !== '';
-      if (facility === 'escalator') return q.ESCTR_NO && q.ESCTR_NO !== '';
-      if (facility === 'exit') return q.EXIT_NO && q.EXIT_NO !== '';
+      if (facility === 'elevator') return q.elvtrNo && q.elvtrNo !== '';
+      if (facility === 'escalator') return q.esctrNo && q.esctrNo !== '';
+      if (facility === 'exit') return q.exitNo && q.exitNo !== '';
       return true;
     });
   }
@@ -272,13 +186,13 @@ export function formatQuickExitInfo(
     : ['Line', 'Direction', 'Car', 'Exit', 'Stairs', 'Elevator', 'Escalator'];
 
   const rows = filtered.map(q => [
-    q.SW_NM || '-',
-    q.DRTN || '-',
-    q.FST_CAR_NO || '-',
-    q.EXIT_NO || '-',
-    q.STAIR_NO || '-',
-    q.ELVTR_NO || '-',
-    q.ESCTR_NO || '-',
+    q.lineNm || '-',
+    q.drtn || '-',
+    q.fstCarNo || '-',
+    q.exitNo || '-',
+    q.stairNo || '-',
+    q.elvtrNo || '-',
+    q.esctrNo || '-',
   ]);
 
   const table = createMarkdownTable(headers, rows);

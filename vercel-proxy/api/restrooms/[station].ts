@@ -3,9 +3,11 @@ import { fetchWithRetry } from '../../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
 import { matchStation, suggestStations, getEnglishName } from '../../lib/stationMatcher.js';
-import type { RestroomApiResponse, RestroomData } from '../../lib/types/index.js';
+import type { RestroomInfo, RestroomData } from '../../lib/types/index.js';
 import { formatRestroomInfo } from '../../lib/restroomFormatter.js';
 import type { Language } from '../../lib/formatter.js';
+
+const BASE_URL = 'http://openapi.seoul.go.kr:8088';
 
 /**
  * Fetch restroom data from Seoul Open API
@@ -14,9 +16,6 @@ async function fetchRestroomData(
   station: string,
   apiKey: string
 ): Promise<RestroomData> {
-  const encodedStation = encodeURIComponent(station);
-  const url = `http://openapi.seoul.go.kr:8088/${apiKey}/json/getFcRstrm/1/100/${encodedStation}`;
-
   const result: RestroomData = {
     station,
     stationEn: getEnglishName(station),
@@ -24,15 +23,24 @@ async function fetchRestroomData(
   };
 
   try {
-    const response = await fetchWithRetry(url, { timeout: 5000, retries: 1 });
+    const url = `${BASE_URL}/${apiKey}/json/getFcRstrm/1/1000/`;
+    const response = await fetchWithRetry(url, { timeout: 10000, retries: 1 });
     if (!response.ok) return result;
 
-    const data = (await response.json()) as RestroomApiResponse;
-    if (data?.getFcRstrm?.row) {
-      result.restrooms = data.getFcRstrm.row;
+    const data = await response.json();
+
+    // Handle both response structures
+    let items: RestroomInfo[] = [];
+    if (data?.response?.body?.items?.item) {
+      items = data.response.body.items.item;
+    } else if (data?.getFcRstrm?.row) {
+      items = data.getFcRstrm.row;
     }
-  } catch {
-    // Return empty result on error
+
+    // Filter by station name
+    result.restrooms = items.filter(item => item.stnNm === station);
+  } catch (error) {
+    console.error('Error fetching restroom data:', error);
   }
 
   return result;

@@ -6,44 +6,61 @@ import { matchStation, suggestStations, getEnglishName } from '../../lib/station
 import type {
   ElevatorLocationApiResponse,
   EscalatorLocationApiResponse,
-  ElevatorOperationApiResponse,
-  EscalatorOperationApiResponse,
   WheelchairLiftApiResponse,
   AccessibilityInfo,
+  ElevatorLocationInfo,
+  EscalatorLocationInfo,
+  WheelchairLiftInfo,
 } from '../../lib/types/index.js';
 import { formatAccessibilityInfo } from '../../lib/accessibilityFormatter.js';
 import type { Language } from '../../lib/formatter.js';
 
 type AccessibilityType = 'elevator' | 'escalator' | 'wheelchair' | 'all';
 
+const BASE_URL = 'http://openapi.seoul.go.kr:8088';
+
 /**
- * Fetch accessibility data from Seoul Open API
+ * Fetch and filter accessibility data from Seoul Open API
  */
 async function fetchAccessibilityData(
   station: string,
   apiKey: string,
   type: AccessibilityType = 'all'
 ): Promise<AccessibilityInfo> {
-  const encodedStation = encodeURIComponent(station);
-  const baseUrl = 'http://openapi.seoul.go.kr:8088';
-
-  const fetchApi = async <T>(serviceName: string): Promise<T | null> => {
-    try {
-      const url = `${baseUrl}/${apiKey}/json/${serviceName}/1/100/${encodedStation}`;
-      const response = await fetchWithRetry(url, { timeout: 5000, retries: 1 });
-      if (!response.ok) return null;
-      return response.json() as Promise<T>;
-    } catch {
-      return null;
-    }
-  };
-
   const result: AccessibilityInfo = {
     station,
     stationEn: getEnglishName(station),
-    elevators: { locations: [], operations: [] },
-    escalators: { locations: [], operations: [] },
+    elevators: [],
+    escalators: [],
     wheelchairLifts: [],
+  };
+
+  // Helper to fetch and filter by station name
+  const fetchAndFilter = async <T extends { stnNm: string }>(
+    serviceName: string
+  ): Promise<T[]> => {
+    try {
+      // Fetch all data (no station filter in URL)
+      const url = `${BASE_URL}/${apiKey}/json/${serviceName}/1/1000/`;
+      const response = await fetchWithRetry(url, { timeout: 10000, retries: 1 });
+      if (!response.ok) return [];
+
+      const data = await response.json();
+
+      // Handle both response structures
+      let items: T[] = [];
+      if (data?.response?.body?.items?.item) {
+        items = data.response.body.items.item;
+      } else if (data?.[serviceName]?.row) {
+        items = data[serviceName].row;
+      }
+
+      // Filter by station name
+      return items.filter(item => item.stnNm === station);
+    } catch (error) {
+      console.error(`Error fetching ${serviceName}:`, error);
+      return [];
+    }
   };
 
   // Fetch in parallel based on requested type
@@ -52,16 +69,7 @@ async function fetchAccessibilityData(
   if (type === 'all' || type === 'elevator') {
     promises.push(
       (async () => {
-        const [locations, operations] = await Promise.all([
-          fetchApi<ElevatorLocationApiResponse>('getFcElvtr'),
-          fetchApi<ElevatorOperationApiResponse>('getWksnElvtr'),
-        ]);
-        if (locations?.getFcElvtr?.row) {
-          result.elevators.locations = locations.getFcElvtr.row;
-        }
-        if (operations?.getWksnElvtr?.row) {
-          result.elevators.operations = operations.getWksnElvtr.row;
-        }
+        result.elevators = await fetchAndFilter<ElevatorLocationInfo>('getFcElvtr');
       })()
     );
   }
@@ -69,16 +77,7 @@ async function fetchAccessibilityData(
   if (type === 'all' || type === 'escalator') {
     promises.push(
       (async () => {
-        const [locations, operations] = await Promise.all([
-          fetchApi<EscalatorLocationApiResponse>('getFcEsctr'),
-          fetchApi<EscalatorOperationApiResponse>('getWksnEsctr'),
-        ]);
-        if (locations?.getFcEsctr?.row) {
-          result.escalators.locations = locations.getFcEsctr.row;
-        }
-        if (operations?.getWksnEsctr?.row) {
-          result.escalators.operations = operations.getWksnEsctr.row;
-        }
+        result.escalators = await fetchAndFilter<EscalatorLocationInfo>('getFcEsctr');
       })()
     );
   }
@@ -86,10 +85,7 @@ async function fetchAccessibilityData(
   if (type === 'all' || type === 'wheelchair') {
     promises.push(
       (async () => {
-        const wheelchairData = await fetchApi<WheelchairLiftApiResponse>('getWksnWhcllift');
-        if (wheelchairData?.getWksnWhcllift?.row) {
-          result.wheelchairLifts = wheelchairData.getWksnWhcllift.row;
-        }
+        result.wheelchairLifts = await fetchAndFilter<WheelchairLiftInfo>('getFcWhcllift');
       })()
     );
   }

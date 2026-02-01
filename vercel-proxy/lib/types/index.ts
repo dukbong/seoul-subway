@@ -24,6 +24,7 @@ export type {
 
 // Accessibility API types
 export type {
+  SeoulOpenApiResponse,
   ElevatorLocationInfo,
   ElevatorLocationApiResponse,
   EscalatorLocationInfo,

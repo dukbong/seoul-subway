@@ -3,11 +3,13 @@ import { fetchWithRetry } from '../../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
 import { matchStation, suggestStations, getEnglishName } from '../../lib/stationMatcher.js';
-import type { QuickExitApiResponse, QuickExitData } from '../../lib/types/index.js';
+import type { QuickExitInfo, QuickExitData } from '../../lib/types/index.js';
 import { formatQuickExitInfo } from '../../lib/accessibilityFormatter.js';
 import type { Language } from '../../lib/formatter.js';
 
 type FacilityType = 'elevator' | 'escalator' | 'exit' | 'all';
+
+const BASE_URL = 'http://openapi.seoul.go.kr:8088';
 
 /**
  * Fetch quick exit data from Seoul Open API
@@ -16,9 +18,6 @@ async function fetchQuickExitData(
   station: string,
   apiKey: string
 ): Promise<QuickExitData> {
-  const encodedStation = encodeURIComponent(station);
-  const url = `http://openapi.seoul.go.kr:8088/${apiKey}/json/getFstExit/1/100/${encodedStation}`;
-
   const result: QuickExitData = {
     station,
     stationEn: getEnglishName(station),
@@ -26,15 +25,24 @@ async function fetchQuickExitData(
   };
 
   try {
-    const response = await fetchWithRetry(url, { timeout: 5000, retries: 1 });
+    const url = `${BASE_URL}/${apiKey}/json/getFstExit/1/1000/`;
+    const response = await fetchWithRetry(url, { timeout: 10000, retries: 1 });
     if (!response.ok) return result;
 
-    const data = (await response.json()) as QuickExitApiResponse;
-    if (data?.getFstExit?.row) {
-      result.quickExits = data.getFstExit.row;
+    const data = await response.json();
+
+    // Handle both response structures
+    let items: QuickExitInfo[] = [];
+    if (data?.response?.body?.items?.item) {
+      items = data.response.body.items.item;
+    } else if (data?.getFstExit?.row) {
+      items = data.getFstExit.row;
     }
-  } catch {
-    // Return empty result on error
+
+    // Filter by station name
+    result.quickExits = items.filter(item => item.stnNm === station);
+  } catch (error) {
+    console.error('Error fetching quick exit data:', error);
   }
 
   return result;
