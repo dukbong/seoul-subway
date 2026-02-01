@@ -102,6 +102,7 @@ describe('Quick Exit API Handler', () => {
       query: { station: '강남', format: 'raw' },
     };
 
+    // Mock data matching actual Seoul Open API response structure
     const mockQuickExitData = {
       getFstExit: {
         list_total_count: 1,
@@ -109,13 +110,14 @@ describe('Quick Exit API Handler', () => {
         row: [{
           SBWAY_STTN_NM: '강남',
           SW_NM: '2호선',
-          UPDNLN_SE: '상행',
-          DRTN: '강북방면',
-          EXIT_NO: '1',
-          STAIR_NO: '1',
-          ELVTR_NO: '1',
-          ESCTR_NO: '1',
-          FST_CAR_NO: '3',
+          UPBDNB_SE: '상행',
+          DRTN_INFO: '역삼',
+          QCKGFF_VHCL_DOOR_NO: '3-2',
+          PLFM_CMG_FAC: '엘리베이터',
+          FAC_NO: '1',
+          ELVTR_NO: '02-6110-1234',
+          FAC_PSTN_NM: 'B1 승강장',
+          FWK_PSTN_NM: '개찰구 앞',
         }],
       },
     };
@@ -226,6 +228,82 @@ describe('Quick Exit API Handler', () => {
     expect(statusFn).toHaveBeenCalledWith(200);
     expect(jsonFn).toHaveBeenCalledWith(expect.objectContaining({
       quickExits: [],
+    }));
+  });
+
+  it('should return English formatted output with lang=en', async () => {
+    mockReq = {
+      method: 'GET',
+      query: { station: '강남', lang: 'en' },
+    };
+
+    const mockData = {
+      getFstExit: {
+        list_total_count: 1,
+        RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
+        row: [{
+          SBWAY_STTN_NM: '강남',
+          SW_NM: '2호선',
+          UPBDNB_SE: '상행',
+          DRTN_INFO: '역삼',
+          QCKGFF_VHCL_DOOR_NO: '3-2',
+          PLFM_CMG_FAC: '엘리베이터',
+          FAC_PSTN_NM: 'B1 승강장',
+        }],
+      },
+    };
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(mockData), { status: 200 })
+    );
+
+    await handler(mockReq as VercelRequest, mockRes as VercelResponse);
+
+    expect(statusFn).toHaveBeenCalledWith(200);
+    expect(sendFn).toHaveBeenCalledWith(expect.stringContaining('Line 2'));
+    expect(sendFn).toHaveBeenCalledWith(expect.stringContaining('Yeoksam'));
+    expect(sendFn).toHaveBeenCalledWith(expect.stringContaining('Elevator'));
+  });
+
+  it('should map new API fields correctly', async () => {
+    mockReq = {
+      method: 'GET',
+      query: { station: '강남', format: 'raw' },
+    };
+
+    const mockData = {
+      getFstExit: {
+        list_total_count: 1,
+        RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
+        row: [{
+          SBWAY_STTN_NM: '강남',
+          SW_NM: '2호선',
+          DRTN_INFO: '역삼',
+          QCKGFF_VHCL_DOOR_NO: '3-2',
+          PLFM_CMG_FAC: '엘리베이터',
+          FAC_PSTN_NM: 'B1 승강장',
+        }],
+      },
+    };
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(mockData), { status: 200 })
+    );
+
+    await handler(mockReq as VercelRequest, mockRes as VercelResponse);
+
+    expect(statusFn).toHaveBeenCalledWith(200);
+    expect(jsonFn).toHaveBeenCalledWith(expect.objectContaining({
+      station: '강남',
+      quickExits: expect.arrayContaining([
+        expect.objectContaining({
+          lineNm: '2호선',
+          drtnInfo: '역삼',
+          qckgffVhclDoorNo: '3-2',
+          plfmCmgFac: '엘리베이터',
+          facPstnNm: 'B1 승강장',
+        }),
+      ]),
     }));
   });
 });

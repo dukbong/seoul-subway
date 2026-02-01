@@ -3,7 +3,7 @@
  */
 
 import type { RestroomInfo, RestroomData } from './types/index.js';
-import { type Language, createMarkdownTable } from './formatter.js';
+import { type Language, createMarkdownTable, translateLineName } from './formatter.js';
 
 /**
  * Format gate location
@@ -120,7 +120,7 @@ export function formatRestroomInfo(
     : ['Line', 'Location', 'Type', 'Toilets', 'Wheelchair', 'Baby'];
 
   const rows = data.restrooms.map(r => [
-    r.lineNm || '-',
+    translateLineName(r.lineNm, lang) || '-',
     r.dtlPstn || '-',
     formatRestroomType(r, lang),
     formatToiletCounts(r, lang),

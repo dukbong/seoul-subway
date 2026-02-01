@@ -32,12 +32,38 @@ async function fetchQuickExitData(
     const data = await response.json();
 
     // Handle both response structures
-    let items: QuickExitInfo[] = [];
+    let rawItems: Record<string, unknown>[] = [];
     if (data?.response?.body?.items?.item) {
-      items = data.response.body.items.item;
+      rawItems = data.response.body.items.item;
     } else if (data?.getFstExit?.row) {
-      items = data.getFstExit.row;
+      rawItems = data.getFstExit.row;
     }
+
+    // Map API field names to our interface fields
+    const items: QuickExitInfo[] = rawItems.map((item: Record<string, unknown>) => ({
+      lineNm: (item.SW_NM || item.lineNm) as string,
+      stnNm: (item.SBWAY_STTN_NM || item.stnNm) as string,
+      stnCd: (item.STN_CD || item.stnCd) as string | undefined,
+      stnNo: (item.STN_NO || item.stnNo) as string | undefined,
+      upbdnbSe: (item.UPBDNB_SE || item.upbdnbSe) as string | undefined,
+      drtnInfo: (item.DRTN_INFO || item.drtnInfo) as string | undefined,
+      qckgffVhclDoorNo: (item.QCKGFF_VHCL_DOOR_NO || item.qckgffVhclDoorNo) as string | undefined,
+      plfmCmgFac: (item.PLFM_CMG_FAC || item.plfmCmgFac) as string | undefined,
+      facNo: (item.FAC_NO || item.facNo) as string | undefined,
+      elvtrNo: (item.ELVTR_NO || item.elvtrNo) as string | undefined,
+      fwkPstnNm: (item.FWK_PSTN_NM || item.fwkPstnNm) as string | undefined,
+      facPstnNm: (item.FAC_PSTN_NM || item.facPstnNm) as string | undefined,
+      crtrYmd: (item.CRTR_YMD || item.crtrYmd) as string | undefined,
+      // Legacy fields for backward compatibility
+      updnLine: (item.UPDNLN_SE || item.updnLine) as string | undefined,
+      drtn: (item.DRTN || item.drtn) as string | undefined,
+      exitNo: (item.EXIT_NO || item.exitNo) as string | undefined,
+      stairNo: (item.STAIR_NO || item.stairNo) as string | undefined,
+      esctrNo: (item.ESCTR_NO || item.esctrNo) as string | undefined,
+      fstCarNo: (item.FST_CAR_NO || item.fstCarNo) as string | undefined,
+      fstDoorNo: (item.FST_DOOR_NO || item.fstDoorNo) as string | undefined,
+      remark: (item.REMARK || item.remark) as string | undefined,
+    }));
 
     // Filter by station name
     result.quickExits = items.filter(item => item.stnNm === station);

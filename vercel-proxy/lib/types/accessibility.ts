@@ -77,18 +77,29 @@ export interface WheelchairLiftInfo {
   crtrYmd?: string;
 }
 
-/** 빠른하차 정보 (getFstExit) */
+/** 빠른하차 정보 (getFstExit) - 실제 API 필드 */
 export interface QuickExitInfo {
-  lineNm: string;        // 호선명
-  stnNm: string;         // 역명
-  updnLine: string;      // 상하행 구분
-  drtn: string;          // 방향
-  exitNo: string;        // 출구번호
-  stairNo: string;       // 계단번호
-  elvtrNo: string;       // 엘리베이터 번호
-  esctrNo: string;       // 에스컬레이터 번호
-  fstCarNo: string;      // 빠른하차 칸 번호
-  fstDoorNo?: string;    // 빠른하차 문 번호
+  lineNm: string;           // 호선명 (예: "2호선")
+  stnNm: string;            // 역명
+  stnCd?: string;           // 역코드
+  stnNo?: string;           // 역번호
+  upbdnbSe?: string;        // 상하행 구분
+  drtnInfo?: string;        // 방향 정보 (예: "역삼", "교대")
+  qckgffVhclDoorNo?: string; // 빠른하차 차량 문 번호
+  plfmCmgFac?: string;      // 승강장 접근 시설 (엘리베이터/계단)
+  facNo?: string;           // 시설번호
+  elvtrNo?: string;         // 엘리베이터 번호/전화번호
+  fwkPstnNm?: string;       // 보행자 위치명
+  facPstnNm?: string;       // 시설 위치명
+  crtrYmd?: string;         // 생성일
+  // 기존 필드 (호환성 유지)
+  updnLine?: string;
+  drtn?: string;
+  exitNo?: string;
+  stairNo?: string;
+  esctrNo?: string;
+  fstCarNo?: string;
+  fstDoorNo?: string;
   remark?: string;
 }
 

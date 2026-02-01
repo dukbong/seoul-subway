@@ -110,3 +110,39 @@ export function formatFare(fare: number, lang: Language): string {
 export function formatDuration(minutes: number, lang: Language): string {
   return lang === 'ko' ? `${minutes}분` : `${minutes} min`;
 }
+
+/**
+ * Translate Korean line name to English
+ * Example: "2호선" → "Line 2"
+ */
+export function translateLineName(lineNm: string, lang: Language): string {
+  if (lang === 'ko') return lineNm;
+  if (!lineNm) return '-';
+
+  // 숫자 호선: "2호선" → "Line 2"
+  const match = lineNm.match(/^(\d+)호선$/);
+  if (match) return `Line ${match[1]}`;
+
+  // 특수 노선 매핑
+  const specialLines: Record<string, string> = {
+    '경의중앙선': 'Gyeongui-Jungang',
+    '경의선': 'Gyeongui',
+    '중앙선': 'Jungang',
+    '공항철도': 'Airport Railroad',
+    '신분당선': 'Sinbundang',
+    '수인분당선': 'Suin-Bundang',
+    '분당선': 'Bundang',
+    '수인선': 'Suin',
+    '경춘선': 'Gyeongchun',
+    '경강선': 'Gyeonggang',
+    '서해선': 'Seohae',
+    '우이신설선': 'Ui-Sinseol',
+    '신림선': 'Sillim',
+    '김포골드라인': 'Gimpo Goldline',
+    '에버라인': 'Everline',
+    '의정부경전철': 'Uijeongbu LRT',
+    'GTX-A': 'GTX-A',
+  };
+
+  return specialLines[lineNm] || lineNm;
+}

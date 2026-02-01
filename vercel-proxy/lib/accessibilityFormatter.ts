@@ -10,7 +10,8 @@ import type {
   QuickExitInfo,
   QuickExitData,
 } from './types/index.js';
-import { type Language, createMarkdownTable } from './formatter.js';
+import { type Language, createMarkdownTable, translateLineName } from './formatter.js';
+import { getEnglishName } from './stationMatcher.js';
 
 /**
  * Format operation status
@@ -30,6 +31,35 @@ function formatOperationStatus(status: string, lang: Language): string {
 }
 
 /**
+ * Format facility type (elevator/stairs)
+ */
+function formatFacility(facility: string | undefined, lang: Language): string {
+  if (!facility) return '-';
+
+  const facilityMap: Record<string, { ko: string; en: string }> = {
+    '엘리베이터': { ko: '🛗 엘리베이터', en: '🛗 Elevator' },
+    '계단': { ko: '🚶 계단', en: '🚶 Stairs' },
+    '에스컬레이터': { ko: '↗️ 에스컬레이터', en: '↗️ Escalator' },
+  };
+
+  const mapped = facilityMap[facility];
+  if (mapped) return lang === 'ko' ? mapped.ko : mapped.en;
+  return facility;
+}
+
+/**
+ * Format direction info with station name translation
+ */
+function formatDirection(drtnInfo: string | undefined, lang: Language): string {
+  if (!drtnInfo) return '-';
+  if (lang === 'ko') return drtnInfo;
+
+  // Try to translate station name in direction
+  const englishName = getEnglishName(drtnInfo);
+  return englishName || drtnInfo;
+}
+
+/**
  * Format elevator locations to markdown table
  */
 function formatElevators(
@@ -45,7 +75,7 @@ function formatElevators(
     : ['Line', 'Location', 'Floor', 'Status'];
 
   const rows = elevators.map(e => [
-    e.lineNm || '-',
+    translateLineName(e.lineNm, lang) || '-',
     e.dtlPstn || e.vcntEntrcNo || '-',
     `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
     formatOperationStatus(e.oprtngSitu, lang),
@@ -70,7 +100,7 @@ function formatEscalators(
     : ['Line', 'Location', 'Floor', 'Status'];
 
   const rows = escalators.map(e => [
-    e.lineNm || '-',
+    translateLineName(e.lineNm, lang) || '-',
     e.dtlPstn || e.vcntEntrcNo || '-',
     `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
     formatOperationStatus(e.oprtngSitu, lang),
@@ -95,7 +125,7 @@ function formatWheelchairLifts(
     : ['Line', 'Location', 'Status'];
 
   const rows = lifts.map(l => [
-    l.lineNm || '-',
+    translateLineName(l.lineNm, lang) || '-',
     l.dtlPstn || '-',
     formatOperationStatus(l.oprtngSitu, lang),
   ]);
@@ -167,9 +197,15 @@ export function formatQuickExitInfo(
   let filtered = data.quickExits;
   if (facility !== 'all') {
     filtered = data.quickExits.filter(q => {
-      if (facility === 'elevator') return q.elvtrNo && q.elvtrNo !== '';
-      if (facility === 'escalator') return q.esctrNo && q.esctrNo !== '';
-      if (facility === 'exit') return q.exitNo && q.exitNo !== '';
+      if (facility === 'elevator') {
+        return q.plfmCmgFac === '엘리베이터' || (q.elvtrNo && q.elvtrNo !== '');
+      }
+      if (facility === 'escalator') {
+        return q.plfmCmgFac === '에스컬레이터' || (q.esctrNo && q.esctrNo !== '');
+      }
+      if (facility === 'exit') {
+        return q.plfmCmgFac === '계단' || (q.exitNo && q.exitNo !== '');
+      }
       return true;
     });
   }
@@ -181,18 +217,17 @@ export function formatQuickExitInfo(
     return `${header}\n\n${noData}`;
   }
 
+  // Use new table columns based on actual API fields
   const headers = lang === 'ko'
-    ? ['호선', '방향', '칸', '출구', '계단', '엘리베이터', '에스컬레이터']
-    : ['Line', 'Direction', 'Car', 'Exit', 'Stairs', 'Elevator', 'Escalator'];
+    ? ['호선', '방향', '문번호', '시설', '위치']
+    : ['Line', 'Direction', 'Door', 'Facility', 'Location'];
 
   const rows = filtered.map(q => [
-    q.lineNm || '-',
-    q.drtn || '-',
-    q.fstCarNo || '-',
-    q.exitNo || '-',
-    q.stairNo || '-',
-    q.elvtrNo || '-',
-    q.esctrNo || '-',
+    translateLineName(q.lineNm, lang) || '-',
+    formatDirection(q.drtnInfo || q.drtn, lang),
+    q.qckgffVhclDoorNo || q.fstCarNo || '-',
+    formatFacility(q.plfmCmgFac, lang),
+    q.facPstnNm || q.fwkPstnNm || '-',
   ]);
 
   const table = createMarkdownTable(headers, rows);
