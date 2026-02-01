@@ -29,6 +29,10 @@ function createMockResponse(): VercelResponse & {
       this._data = data;
       return this;
     },
+    send(data: unknown) {
+      this._data = data;
+      return this;
+    },
     end() {
       return this;
     },
@@ -182,8 +186,36 @@ describe('route handler integration', () => {
           globalStationCount: 10,
           fare: 1350,
           path: [
-            { idx: 1, stnNm: '강남', lnCd: '2', lnNm: '2호선' },
-            { idx: 2, stnNm: '홍대입구', lnCd: '2', lnNm: '2호선' },
+            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
+            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
+          ],
+        },
+      };
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify(mockData), { status: 200 })
+      );
+
+      const req = createMockRequest({
+        query: { dptreStnNm: '강남', arvlStnNm: '홍대입구', format: 'raw' },
+      });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res._status).toBe(200);
+      expect(res._data).toEqual(mockData);
+      expect(res._headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600');
+    });
+
+    it('should return formatted markdown by default', async () => {
+      const mockData = {
+        result: {
+          globalTravelTime: 25,
+          globalStationCount: 10,
+          fare: 1350,
+          path: [
+            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
+            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
           ],
         },
       };
@@ -199,18 +231,30 @@ describe('route handler integration', () => {
       await handler(req, res);
 
       expect(res._status).toBe(200);
-      expect(res._data).toEqual(mockData);
-      expect(res._headers['Cache-Control']).toBe('s-maxage=300, stale-while-revalidate=600');
+      expect(typeof res._data).toBe('string');
+      expect(res._data).toContain('강남');
+      expect(res._data).toContain('홍대입구');
+      expect(res._headers['Content-Type']).toBe('text/plain; charset=utf-8');
     });
 
     it('should normalize English station names', async () => {
-      const mockData = { result: { path: [] } };
+      const mockData = {
+        result: {
+          globalTravelTime: 25,
+          globalStationCount: 10,
+          fare: 1350,
+          path: [
+            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
+            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
+          ],
+        },
+      };
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response(JSON.stringify(mockData), { status: 200 })
       );
 
       const req = createMockRequest({
-        query: { dptreStnNm: 'Gangnam', arvlStnNm: 'Hongdae' },
+        query: { dptreStnNm: 'Gangnam', arvlStnNm: 'Hongdae', format: 'raw' },
       });
       const res = createMockResponse();
 
@@ -228,7 +272,17 @@ describe('route handler integration', () => {
     });
 
     it('should use custom searchDt when provided', async () => {
-      const mockData = { result: { path: [] } };
+      const mockData = {
+        result: {
+          globalTravelTime: 25,
+          globalStationCount: 10,
+          fare: 1350,
+          path: [
+            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
+            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
+          ],
+        },
+      };
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response(JSON.stringify(mockData), { status: 200 })
       );
@@ -238,6 +292,7 @@ describe('route handler integration', () => {
           dptreStnNm: '강남',
           arvlStnNm: '홍대입구',
           searchDt: '2024-07-01 15:30:00',
+          format: 'raw',
         },
       });
       const res = createMockResponse();
@@ -251,7 +306,17 @@ describe('route handler integration', () => {
     });
 
     it('should include searchType when provided', async () => {
-      const mockData = { result: { path: [] } };
+      const mockData = {
+        result: {
+          globalTravelTime: 25,
+          globalStationCount: 10,
+          fare: 1350,
+          path: [
+            { idx: 1, stnNm: '강남', lnCd: '02', lnNm: '2호선' },
+            { idx: 2, stnNm: '홍대입구', lnCd: '02', lnNm: '2호선' },
+          ],
+        },
+      };
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response(JSON.stringify(mockData), { status: 200 })
       );
@@ -261,6 +326,7 @@ describe('route handler integration', () => {
           dptreStnNm: '강남',
           arvlStnNm: '홍대입구',
           searchType: 'FASTEST',
+          format: 'raw',
         },
       });
       const res = createMockResponse();

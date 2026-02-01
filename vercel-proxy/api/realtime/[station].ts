@@ -4,6 +4,8 @@ import { createError, ErrorCodes } from '../../lib/errors.js';
 import { log } from '../../lib/logger.js';
 import { matchStation, suggestStations } from '../../lib/stationMatcher.js';
 import type { RealtimeApiResponse } from '../../lib/types/index.js';
+import { formatRealtimeArrivals } from '../../lib/realtimeFormatter.js';
+import type { Language } from '../../lib/formatter.js';
 
 export interface RealtimeOptions {
   start?: string;
@@ -68,6 +70,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
   }
 
+  // Parse format and lang parameters
+  const format = (req.query.format as string) || 'formatted';
+  const lang: Language = (req.query.lang as Language) === 'en' ? 'en' : 'ko';
+
   try {
     const data = await getRealtimeData(normalizedStation, apiKey, {
       start: req.query.start as string,
@@ -84,7 +90,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 200,
     });
 
-    return res.status(200).json(data);
+    // Return raw JSON if requested
+    if (format === 'raw') {
+      return res.status(200).json(data);
+    }
+
+    // Return formatted markdown
+    const formatted = formatRealtimeArrivals(data, normalizedStation, lang);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).send(formatted);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 

@@ -29,6 +29,10 @@ function createMockResponse(): VercelResponse & {
       this._data = data;
       return this;
     },
+    send(data: unknown) {
+      this._data = data;
+      return this;
+    },
     end() {
       return this;
     },
@@ -144,7 +148,7 @@ describe('realtime handler integration', () => {
         new Response(JSON.stringify(mockData), { status: 200 })
       );
 
-      const req = createMockRequest({ query: { station: '강남' } });
+      const req = createMockRequest({ query: { station: '강남', format: 'raw' } });
       const res = createMockResponse();
 
       await handler(req, res);
@@ -154,13 +158,45 @@ describe('realtime handler integration', () => {
       expect(res._headers['Cache-Control']).toBe('s-maxage=30, stale-while-revalidate=60');
     });
 
+    it('should return formatted markdown by default', async () => {
+      const mockData = {
+        realtimeArrivalList: [
+          {
+            rowNum: 1,
+            subwayId: '1002',
+            updnLine: '상행',
+            trainLineNm: '강남방면',
+            statnNm: '강남',
+            btrainNo: '2034',
+            bstatnNm: '성수',
+            arvlMsg2: '3분 후 도착',
+            arvlMsg3: '역삼',
+            arvlCd: '1',
+          },
+        ],
+      };
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(JSON.stringify(mockData), { status: 200 })
+      );
+
+      const req = createMockRequest({ query: { station: '강남' } });
+      const res = createMockResponse();
+
+      await handler(req, res);
+
+      expect(res._status).toBe(200);
+      expect(typeof res._data).toBe('string');
+      expect(res._data).toContain('강남역');
+      expect(res._headers['Content-Type']).toBe('text/plain; charset=utf-8');
+    });
+
     it('should handle English station names (case-insensitive)', async () => {
       const mockData = { realtimeArrivalList: [] };
       vi.mocked(fetch).mockResolvedValueOnce(
         new Response(JSON.stringify(mockData), { status: 200 })
       );
 
-      const req = createMockRequest({ query: { station: 'SEOUL STATION' } });
+      const req = createMockRequest({ query: { station: 'SEOUL STATION', format: 'raw' } });
       const res = createMockResponse();
 
       await handler(req, res);
@@ -179,7 +215,7 @@ describe('realtime handler integration', () => {
       );
 
       const req = createMockRequest({
-        query: { station: '강남', start: '0', end: '5' },
+        query: { station: '강남', start: '0', end: '5', format: 'raw' },
       });
       const res = createMockResponse();
 
@@ -227,7 +263,7 @@ describe('realtime handler integration', () => {
         new Response(JSON.stringify(mockErrorData), { status: 200 })
       );
 
-      const req = createMockRequest({ query: { station: '강남' } });
+      const req = createMockRequest({ query: { station: '강남', format: 'raw' } });
       const res = createMockResponse();
 
       await handler(req, res);

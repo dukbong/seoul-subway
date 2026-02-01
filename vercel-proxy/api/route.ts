@@ -4,6 +4,8 @@ import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
 import { matchStation, suggestStations } from '../lib/stationMatcher.js';
 import type { RouteApiResponse } from '../lib/types/index.js';
+import { formatRoute } from '../lib/routeFormatter.js';
+import type { Language } from '../lib/formatter.js';
 
 export interface RouteOptions {
   dptreStnNm: string;
@@ -109,6 +111,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json(createError(ErrorCodes.API_KEY_ERROR, 'API key not configured'));
   }
 
+  // Parse format and lang parameters
+  const format = (req.query.format as string) || 'formatted';
+  const lang: Language = (req.query.lang as Language) === 'en' ? 'en' : 'ko';
+
   try {
     const data = await getRouteData(apiKey, {
       dptreStnNm: normalizedDeparture,
@@ -127,7 +133,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 200,
     });
 
-    return res.status(200).json(data);
+    // Return raw JSON if requested
+    if (format === 'raw') {
+      return res.status(200).json(data);
+    }
+
+    // Return formatted markdown
+    const formatted = formatRoute(data, normalizedDeparture, normalizedArrival, lang);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).send(formatted);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
