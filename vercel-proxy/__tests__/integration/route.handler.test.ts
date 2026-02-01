@@ -91,10 +91,8 @@ describe('route handler integration', () => {
 
       expect(res._status).toBe(400);
       expect(res._data).toMatchObject({
-        code: 'MISSING_PARAMETER',
-        details: expect.objectContaining({
-          required: ['dptreStnNm', 'arvlStnNm'],
-        }),
+        code: 'VALIDATION_ERROR',
+        details: { param: 'dptreStnNm' },
       });
     });
 
@@ -106,7 +104,8 @@ describe('route handler integration', () => {
 
       expect(res._status).toBe(400);
       expect(res._data).toMatchObject({
-        code: 'MISSING_PARAMETER',
+        code: 'VALIDATION_ERROR',
+        details: { param: 'arvlStnNm' },
       });
     });
 
