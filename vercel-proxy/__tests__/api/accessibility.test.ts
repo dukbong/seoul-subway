@@ -118,7 +118,16 @@ describe('Accessibility API Handler', () => {
       getFcElvtr: {
         list_total_count: 1,
         RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
-        row: [{ SBWAY_STTN_NM: '강남', INSTL_PLACE: '1층', SW_NM: '2호선', GROUND_CD: '2', INSTL_LT: 'B1', ELVTR_SE: '일반' }],
+        row: [{
+          stnNm: '강남',
+          lineNm: '2호선',
+          dtlPstn: '1층',
+          bgngFlrGrndUdgdSe: '지하',
+          bgngFlr: 'B1',
+          endFlrGrndUdgdSe: '지상',
+          endFlr: '1',
+          oprtngSitu: 'M',
+        }],
       },
     };
 
@@ -132,9 +141,7 @@ describe('Accessibility API Handler', () => {
     expect(statusFn).toHaveBeenCalledWith(200);
     expect(jsonFn).toHaveBeenCalledWith(expect.objectContaining({
       station: '강남',
-      elevators: expect.objectContaining({
-        locations: expect.any(Array),
-      }),
+      elevators: expect.any(Array),
     }));
   });
 

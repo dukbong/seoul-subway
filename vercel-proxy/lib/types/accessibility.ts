@@ -109,6 +109,8 @@ export interface RestroomInfo {
   wmsexToiletInnb?: number;  // 여성용 대변기 수
   dspsnToiletInnb?: number;  // 장애인 화장실 수
   babyChngSttus?: string;    // 기저귀 교환대 유무
+  rstrmInfo?: string;        // 화장실 유형 정보 (예: "일반(남,여) / 교통약자(남,여)")
+  whlchrAcsPsbltyYn?: string; // 휠체어 접근 가능 여부 (Y/N)
   crtrYmd?: string;
 }
 

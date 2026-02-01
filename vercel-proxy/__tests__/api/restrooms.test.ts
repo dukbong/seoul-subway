@@ -107,18 +107,19 @@ describe('Restrooms API Handler', () => {
         list_total_count: 1,
         RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
         row: [{
-          SBWAY_STTN_NM: '강남',
-          SW_NM: '2호선',
-          RSTRM_SE: '일반',
-          INSTL_PLACE: '대합실',
-          INSTL_LT: 'B1',
-          GROUND_CD: '2',
-          GATE_INOTR_SE: '1',
-          MLSEX_TOILET_INNB: '3',
-          MLSEX_URIN_INNB: '5',
-          WMSEX_TOILET_INNB: '5',
-          DSPSN_TOILET_INNB: '1',
-          BABY_CHNG_STTUS: 'Y',
+          stnNm: '강남',
+          lineNm: '2호선',
+          dtlPstn: '대합실',
+          flr: 'B1',
+          grndUdgdSe: '지하',
+          gateInotrSe: '1',
+          mlsexToiletInnb: 3,
+          mlsexUrinInnb: 5,
+          wmsexToiletInnb: 5,
+          dspsnToiletInnb: 1,
+          babyChngSttus: 'Y',
+          rstrmInfo: '일반(남,여) / 교통약자(남,여)',
+          whlchrAcsPsbltyYn: 'Y',
         }],
       },
     };
@@ -147,13 +148,13 @@ describe('Restrooms API Handler', () => {
         list_total_count: 1,
         RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
         row: [{
-          SBWAY_STTN_NM: '강남',
-          SW_NM: '2호선',
-          RSTRM_SE: '일반',
-          INSTL_PLACE: '대합실',
-          INSTL_LT: 'B1',
-          GROUND_CD: '2',
-          GATE_INOTR_SE: '1',
+          stnNm: '강남',
+          lineNm: '2호선',
+          dtlPstn: '대합실',
+          flr: 'B1',
+          grndUdgdSe: '지하',
+          gateInotrSe: '1',
+          rstrmInfo: '일반(남,여)',
         }],
       },
     };
@@ -228,13 +229,13 @@ describe('Restrooms API Handler', () => {
         list_total_count: 1,
         RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
         row: [{
-          SBWAY_STTN_NM: '강남',
-          SW_NM: '2호선',
-          RSTRM_SE: '일반',
-          INSTL_PLACE: '대합실',
-          INSTL_LT: 'B1',
-          GROUND_CD: '2',
-          GATE_INOTR_SE: '1',
+          stnNm: '강남',
+          lineNm: '2호선',
+          dtlPstn: '대합실',
+          flr: 'B1',
+          grndUdgdSe: '지하',
+          gateInotrSe: '1',
+          rstrmInfo: '일반(남,여)',
         }],
       },
     };
@@ -251,5 +252,47 @@ describe('Restrooms API Handler', () => {
     const sentContent = sendFn.mock.calls[0]?.[0] as string | undefined;
     expect(sentContent).toBeDefined();
     expect(sentContent).toContain('Gangnam');
+  });
+
+  it('should display accessible restroom info from rstrmInfo field', async () => {
+    mockReq = {
+      method: 'GET',
+      query: { station: '강남' },
+    };
+
+    const mockData = {
+      getFcRstrm: {
+        list_total_count: 1,
+        RESULT: { CODE: 'INFO-000', MESSAGE: 'OK' },
+        row: [{
+          stnNm: '강남',
+          lineNm: '2호선',
+          dtlPstn: '대합실',
+          flr: 'B1',
+          grndUdgdSe: '지하',
+          gateInotrSe: '1',
+          rstrmInfo: '일반(남,여) / 교통약자(남,여)',
+          whlchrAcsPsbltyYn: 'Y',
+          babyChngSttus: 'Y',
+        }],
+      },
+    };
+
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(mockData), { status: 200 })
+    );
+
+    await handler(mockReq as VercelRequest, mockRes as VercelResponse);
+
+    expect(statusFn).toHaveBeenCalledWith(200);
+    const sentContent = sendFn.mock.calls[0]?.[0] as string | undefined;
+    expect(sentContent).toBeDefined();
+    // Should contain accessible restroom type
+    expect(sentContent).toContain('교통약자');
+    // Should contain wheelchair access
+    expect(sentContent).toContain('♿');
+    // Should show accessible count in summary
+    expect(sentContent).toContain('장애인화장실 1개');
+    expect(sentContent).toContain('휠체어접근 1개');
   });
 });
