@@ -302,6 +302,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Return formatted markdown
     const formatted = formatRoute(data, normalizedDeparture, normalizedArrival, lang);
+
+    // Check if external API returned error - fallback to internal routing
+    if (formatted.startsWith('Error:') || formatted.startsWith('오류:')) {
+      log({
+        level: 'info',
+        endpoint: '/api/route',
+        message: 'External API returned error, falling back to internal routing',
+        formattedError: formatted.substring(0, 100),
+      });
+
+      const pathResult = findShortestPath(normalizedDeparture, normalizedArrival);
+
+      if (pathResult) {
+        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+
+        if (format === 'raw') {
+          return res.status(200).json(formatPathResultJson(pathResult));
+        }
+
+        const internalFormatted = lang === 'en' ? formatPathResultEn(pathResult) : formatPathResultKo(pathResult);
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        return res.status(200).send(internalFormatted);
+      }
+    }
+
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     return res.status(200).send(formatted);
   } catch (error) {
