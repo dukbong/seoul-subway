@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 5호선 역 데이터 (방화 ~ 마천/하남검단산) */
 export const line5: LineData = {

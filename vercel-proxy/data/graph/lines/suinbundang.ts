@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 수인분당선 역 데이터 (청량리 ~ 인천) */
 export const suinBundang: LineData = {

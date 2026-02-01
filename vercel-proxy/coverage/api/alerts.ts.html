@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">95.52% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>61/61</span>
+                <span class='fraction'>64/67</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.73% </span>
+                <span class="strong">86.95% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>18/19</span>
+                <span class='fraction'>20/23</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">95.52% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>61/61</span>
+                <span class='fraction'>64/67</span>
             </div>
         
             
@@ -159,7 +159,20 @@
 <a name='L94'></a><a href='#L94'>94</a>
 <a name='L95'></a><a href='#L95'>95</a>
 <a name='L96'></a><a href='#L96'>96</a>
-<a name='L97'></a><a href='#L97'>97</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -194,6 +207,14 @@
 <span class="cline-any cline-yes">15x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">12x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -223,6 +244,7 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-yes">11x</span>
@@ -259,12 +281,14 @@
 import { fetchWithRetry } from '../lib/fetchWithRetry.js';
 import { createError, ErrorCodes } from '../lib/errors.js';
 import { log } from '../lib/logger.js';
+import { parseAlerts, type EnhancedAlertsResponse } from '../lib/alertParser.js';
 import type { AlertsApiResponse } from '../lib/types/index.js';
 &nbsp;
 export interface AlertsOptions {
   pageNo?: string;
   numOfRows?: string;
   lineNm?: string;
+  format?: 'default' | 'enhanced';
 }
 &nbsp;
 /**
@@ -273,8 +297,8 @@ export interface AlertsOptions {
 export async function getAlertsData(
   apiKey: string,
   options: AlertsOptions = {}
-): Promise&lt;AlertsApiResponse&gt; {
-  const { pageNo = '1', numOfRows = '10', lineNm } = options;
+): Promise&lt;AlertsApiResponse | EnhancedAlertsResponse&gt; {
+  const { pageNo = '1', numOfRows = '10', lineNm, format = 'default' } = options;
 &nbsp;
   const params = new URLSearchParams({
     serviceKey: apiKey,
@@ -290,7 +314,15 @@ export async function getAlertsData(
   const apiUrl = `https://apis.data.go.kr/B553766/ntce/getNtceList?${params.toString()}`;
 &nbsp;
   const response = await fetchWithRetry(apiUrl, { timeout: 4000, retries: 1 });
-  return response.json() as Promise&lt;AlertsApiResponse&gt;;
+  const data = await response.json() as AlertsApiResponse;
+&nbsp;
+  // Return enhanced format if requested
+  if (format === 'enhanced') <span class="branch-0 cbranch-no" title="branch not covered" >{</span>
+<span class="cstat-no" title="statement not covered" >    const notices = data.ntceList ?? [];</span>
+<span class="cstat-no" title="statement not covered" >    return parseAlerts(notices);</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+&nbsp;
+  return data;
 }
 &nbsp;
 /**
@@ -316,12 +348,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 &nbsp;
   try {
-    const { pageNo, numOfRows, lineNm } = req.query;
+    const { pageNo, numOfRows, lineNm, format } = req.query;
 &nbsp;
     const data = await getAlertsData(apiKey, {
       pageNo: pageNo ? String(pageNo) : undefined,
       numOfRows: numOfRows ? String(numOfRows) : undefined,
       lineNm: lineNm ? String(lineNm) : undefined,
+      format: format === <span class="branch-0 cbranch-no" title="branch not covered" >'enhanced' ? 'enhanced' : '</span>default',
     });
 &nbsp;
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
@@ -358,7 +391,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-01-31T18:48:42.218Z
+                at 2026-02-01T14:12:18.654Z
             </div>
         <script src="../prettify.js"></script>
         <script>

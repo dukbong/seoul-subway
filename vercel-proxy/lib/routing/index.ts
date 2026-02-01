@@ -1,7 +1,7 @@
 /**
  * 경로 탐색 모듈 진입점
  */
-export { dijkstra, findShortestPath } from './dijkstra';
+export { dijkstra, findShortestPath } from './dijkstra.js';
 export {
   buildGraph,
   getGraph,
@@ -10,10 +10,10 @@ export {
   findStationIdByName,
   isSeoulMetroLine,
   isSeoulMetroStation,
-} from './graphBuilder';
-export { calculateFare, formatFare, formatFareEn } from './fareCalculator';
+} from './graphBuilder.js';
+export { calculateFare, formatFare, formatFareEn } from './fareCalculator.js';
 export {
   formatPathResultKo,
   formatPathResultEn,
   formatPathResultJson,
-} from './pathFormatter';
+} from './pathFormatter.js';

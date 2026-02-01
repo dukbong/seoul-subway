@@ -2,8 +2,8 @@
  * 경로 결과 포맷터
  * 자체 경로 탐색 결과를 기존 API 응답 형식과 호환되도록 변환
  */
-import type { PathResult, Station, LineId } from '../types/graph';
-import { calculateFare, formatFare, formatFareEn } from './fareCalculator';
+import type { PathResult, Station, LineId } from '../types/graph.js';
+import { calculateFare, formatFare, formatFareEn } from './fareCalculator.js';
 
 /** 노선별 색상 매핑 */
 const LINE_COLORS: Record<LineId, string> = {

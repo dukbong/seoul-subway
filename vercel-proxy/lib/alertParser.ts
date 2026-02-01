@@ -89,6 +89,25 @@ const MEDIUM_SEVERITY_KEYWORDS = [
   '지연', '혼잡', '장애', '점검', '고장',
 ];
 
+// Title patterns for English translation
+const TITLE_PATTERNS: { pattern: RegExp; en: string }[] = [
+  { pattern: /안전점검/, en: 'Safety Inspection' },
+  { pattern: /신호(장애|고장)/, en: 'Signal Failure' },
+  { pattern: /열차(고장|장애)/, en: 'Train Malfunction' },
+  { pattern: /인명사고/, en: 'Passenger Incident' },
+  { pattern: /화재/, en: 'Fire Emergency' },
+  { pattern: /기상(이변|악화)|폭설|폭우|태풍/, en: 'Weather Conditions' },
+  { pattern: /혼잡/, en: 'Congestion' },
+  { pattern: /점검/, en: 'Maintenance' },
+  { pattern: /공사/, en: 'Construction Work' },
+  { pattern: /정전/, en: 'Power Outage' },
+  { pattern: /스크린도어|안전문/, en: 'Platform Screen Door Issue' },
+  { pattern: /선로(이상|장애)/, en: 'Track Issue' },
+  { pattern: /차량(고장|장애)/, en: 'Train Car Malfunction' },
+  { pattern: /승객(사고|부상)/, en: 'Passenger Accident' },
+  { pattern: /의료|응급/, en: 'Medical Emergency' },
+];
+
 /**
  * Determine alert status from content
  */
@@ -152,16 +171,24 @@ function extractLineName(notice: Notice): string {
 }
 
 /**
- * Generate simple English title from Korean title
+ * Generate English title from Korean title with keyword-based translation
  */
-function generateEnglishTitle(title: string, status: AlertStatus): string {
-  if (status === 'suspended') {
-    return 'Service Suspended';
+function generateEnglishTitle(title: string, lineName: string, status: AlertStatus): string {
+  const lineEn = LINE_NAME_EN_MAP[lineName] || lineName;
+
+  // Keyword-based detailed translation
+  for (const { pattern, en } of TITLE_PATTERNS) {
+    if (pattern.test(title)) {
+      if (status === 'suspended') return `${lineEn}: ${en} - Service Suspended`;
+      if (status === 'delayed') return `${lineEn}: ${en} - Delays Expected`;
+      return `${lineEn}: ${en}`;
+    }
   }
-  if (status === 'delayed') {
-    return 'Service Delayed';
-  }
-  return 'Service Notice';
+
+  // Default fallback
+  if (status === 'suspended') return `${lineEn}: Service Suspended`;
+  if (status === 'delayed') return `${lineEn}: Service Delayed`;
+  return `${lineEn}: Service Notice`;
 }
 
 /**
@@ -181,7 +208,7 @@ export function parseNotice(notice: Notice): ParsedAlert {
     status,
     severity,
     title,
-    titleEn: generateEnglishTitle(title, status),
+    titleEn: generateEnglishTitle(title, lineName, status),
     content,
     registeredAt: notice.regDt,
   };

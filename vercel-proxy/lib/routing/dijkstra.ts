@@ -2,9 +2,9 @@
  * Dijkstra 최단 경로 알고리즘
  * 가중치가 있는 그래프에서 출발점에서 도착점까지의 최단 경로 탐색
  */
-import type { Station, PathResult, TransferInfo, LineId } from '../types/graph';
-import { stationsMap } from '../../data/graph';
-import { getGraph, findStationIdsByName, type Graph } from './graphBuilder';
+import type { Station, PathResult, TransferInfo, LineId } from '../types/graph.js';
+import { stationsMap } from '../../data/graph/index.js';
+import { getGraph, findStationIdsByName, type Graph } from './graphBuilder.js';
 
 /** 우선순위 큐 아이템 */
 interface PQItem {

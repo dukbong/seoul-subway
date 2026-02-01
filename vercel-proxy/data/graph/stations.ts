@@ -2,7 +2,7 @@
  * 전체 역 데이터 통합
  * 노선별 데이터에서 역 정보를 추출하여 Map으로 구성
  */
-import type { Station, LineId } from '../../lib/types/graph';
+import type { Station, LineId } from '../../lib/types/graph.js';
 import {
   line1,
   line1Gwangmyeong,
@@ -22,7 +22,7 @@ import {
   shinbundang,
   gyeonguiJungang,
   suinBundang,
-} from './lines';
+} from './lines/index.js';
 
 /**
  * 역 ID 생성 함수

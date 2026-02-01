@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 공항철도 (AREX) 역 데이터 (서울역 ~ 인천공항2터미널) */
 export const arex: LineData = {

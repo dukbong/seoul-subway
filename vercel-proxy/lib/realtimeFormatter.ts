@@ -11,6 +11,27 @@ import {
   createMarkdownTable,
 } from './formatter.js';
 
+// Direction translation map
+const DIRECTION_MAP: Record<string, string> = {
+  '상행': 'Northbound',
+  '하행': 'Southbound',
+  '내선순환': 'Inner Circle',
+  '외선순환': 'Outer Circle',
+  '상선': 'Upbound',
+  '하선': 'Downbound',
+  '상행(외선)': 'Northbound (Outer)',
+  '하행(내선)': 'Southbound (Inner)',
+};
+
+/**
+ * Format up/down line direction with translation
+ */
+function formatUpDownLine(updnLine: string | undefined, lang: Language): string {
+  if (!updnLine) return '';
+  if (lang === 'ko') return updnLine;
+  return DIRECTION_MAP[updnLine] || updnLine;
+}
+
 /**
  * Parse arrival message to extract time/status
  */
@@ -55,16 +76,19 @@ function getTrainType(arrival: RealtimeArrival, lang: Language): string {
 }
 
 /**
- * Format direction with bilingual support
+ * Format direction with bilingual support including updnLine
  */
 function formatDirection(arrival: RealtimeArrival, lang: Language): string {
   const destination = arrival.bstatnNm || '';
   const destEn = getEnglishName(destination);
+  const updnLine = formatUpDownLine(arrival.updnLine, lang);
 
   if (lang === 'ko') {
-    return destEn ? `${destination} (${destEn})` : destination;
+    const dirPart = updnLine ? `${updnLine} ` : '';
+    return destEn ? `${dirPart}${destination} (${destEn})` : `${dirPart}${destination}`;
   } else {
-    return destEn ? `${destEn} (${destination})` : destination;
+    const dirPart = updnLine ? `${updnLine} ` : '';
+    return destEn ? `${dirPart}${destEn} (${destination})` : `${dirPart}${destination}`;
   }
 }
 

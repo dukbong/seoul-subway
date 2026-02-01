@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 신분당선 역 데이터 (신사 ~ 광교) */
 export const shinbundang: LineData = {

@@ -13,6 +13,57 @@ import type {
 import { type Language, createMarkdownTable, translateLineName } from './formatter.js';
 import { getEnglishName } from './stationMatcher.js';
 
+// Location terms translation map
+const LOCATION_TERMS: Record<string, string> = {
+  '개찰구 내': 'Inside gates',
+  '개찰구 외': 'Outside gates',
+  '개찰구내': 'Inside gates',
+  '개찰구외': 'Outside gates',
+  '대합실': 'Concourse',
+  '승강장': 'Platform',
+  '지하': 'Underground',
+  '지상': 'Ground level',
+  '출구': 'Exit',
+  '환승통로': 'Transfer passage',
+  '역사내': 'Inside station',
+  '역사외': 'Outside station',
+  '지하1층': 'B1F',
+  '지하2층': 'B2F',
+  '지하3층': 'B3F',
+  '지하4층': 'B4F',
+  '지상1층': '1F',
+  '지상2층': '2F',
+  '지상3층': '3F',
+};
+
+// Direction terms translation map
+const DIRECTION_TERMS: Record<string, string> = {
+  '상행': 'Northbound',
+  '하행': 'Southbound',
+  '내선순환': 'Inner Circle',
+  '외선순환': 'Outer Circle',
+  '상선': 'Upbound',
+  '하선': 'Downbound',
+  '방면': 'Direction',
+};
+
+/**
+ * Translate location terms
+ */
+function translateLocationTerms(text: string, lang: Language): string {
+  if (lang === 'ko' || !text) return text || '-';
+
+  let translated = text;
+  for (const [ko, en] of Object.entries(LOCATION_TERMS)) {
+    translated = translated.replace(ko, en);
+  }
+  for (const [ko, en] of Object.entries(DIRECTION_TERMS)) {
+    translated = translated.replace(ko, en);
+  }
+
+  return translated;
+}
+
 /**
  * Format operation status
  */
@@ -48,15 +99,29 @@ function formatFacility(facility: string | undefined, lang: Language): string {
 }
 
 /**
- * Format direction info with station name translation
+ * Format direction info with station name and location translation
  */
 function formatDirection(drtnInfo: string | undefined, lang: Language): string {
   if (!drtnInfo) return '-';
   if (lang === 'ko') return drtnInfo;
 
-  // Try to translate station name in direction
+  // First try direct station name translation
   const englishName = getEnglishName(drtnInfo);
-  return englishName || drtnInfo;
+  if (englishName) return englishName;
+
+  // Apply location and direction term translations
+  let translated = translateLocationTerms(drtnInfo, lang);
+
+  // Try to extract and translate station names within the text
+  const stationMatch = drtnInfo.match(/(.+?)(?:방면|역|행)/);
+  if (stationMatch && stationMatch[1]) {
+    const stationEn = getEnglishName(stationMatch[1]);
+    if (stationEn) {
+      translated = translated.replace(stationMatch[1], stationEn);
+    }
+  }
+
+  return translated;
 }
 
 /**
@@ -76,8 +141,8 @@ function formatElevators(
 
   const rows = elevators.map(e => [
     translateLineName(e.lineNm, lang) || '-',
-    e.dtlPstn || e.vcntEntrcNo || '-',
-    `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
+    translateLocationTerms(e.dtlPstn || e.vcntEntrcNo || '-', lang),
+    translateLocationTerms(`${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-', lang),
     formatOperationStatus(e.oprtngSitu, lang),
   ]);
 
@@ -101,8 +166,8 @@ function formatEscalators(
 
   const rows = escalators.map(e => [
     translateLineName(e.lineNm, lang) || '-',
-    e.dtlPstn || e.vcntEntrcNo || '-',
-    `${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-',
+    translateLocationTerms(e.dtlPstn || e.vcntEntrcNo || '-', lang),
+    translateLocationTerms(`${e.bgngFlrGrndUdgdSe || ''} ${e.bgngFlr || ''} → ${e.endFlrGrndUdgdSe || ''} ${e.endFlr || ''}`.trim() || '-', lang),
     formatOperationStatus(e.oprtngSitu, lang),
   ]);
 
@@ -126,7 +191,7 @@ function formatWheelchairLifts(
 
   const rows = lifts.map(l => [
     translateLineName(l.lineNm, lang) || '-',
-    l.dtlPstn || '-',
+    translateLocationTerms(l.dtlPstn || '-', lang),
     formatOperationStatus(l.oprtngSitu, lang),
   ]);
 
@@ -227,7 +292,7 @@ export function formatQuickExitInfo(
     formatDirection(q.drtnInfo || q.drtn, lang),
     q.qckgffVhclDoorNo || q.fstCarNo || '-',
     formatFacility(q.plfmCmgFac, lang),
-    q.facPstnNm || q.fwkPstnNm || '-',
+    translateLocationTerms(q.facPstnNm || q.fwkPstnNm || '-', lang),
   ]);
 
   const table = createMarkdownTable(headers, rows);

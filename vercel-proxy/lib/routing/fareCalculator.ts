@@ -2,7 +2,7 @@
  * 지하철 요금 계산기
  * 거리 비례제 기반 요금 산정
  */
-import type { PathResult, LineId } from '../types/graph';
+import type { PathResult, LineId } from '../types/graph.js';
 
 /** 기본 요금 (10km 이내) */
 const BASE_FARE = 1400;

@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 경의중앙선 역 데이터 (문산 ~ 지평) */
 export const gyeonguiJungang: LineData = {

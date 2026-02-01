@@ -2,8 +2,8 @@
  * 그래프 빌더
  * 역 데이터, 엣지, 환승 정보를 조합하여 경로 탐색용 그래프 생성
  */
-import type { GraphNode, LineId } from '../types/graph';
-import { stationsMap, edges, transfers, getTransferWalkTime } from '../../data/graph';
+import type { GraphNode, LineId } from '../types/graph.js';
+import { stationsMap, edges, transfers, getTransferWalkTime } from '../../data/graph/index.js';
 
 /** 그래프 (인접 리스트 형태) */
 export type Graph = Map<string, GraphNode>;

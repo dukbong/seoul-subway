@@ -2,8 +2,8 @@
  * 역간 연결 (엣지) 데이터
  * 각 노선의 인접한 역들을 연결하고 소요 시간 정의
  */
-import type { Edge, LineId } from '../../lib/types/graph';
-import { createStationId } from './stations';
+import type { Edge, LineId, LineData } from '../../lib/types/graph.js';
+import { createStationId } from './stations.js';
 import {
   line1,
   line1Gwangmyeong,
@@ -23,8 +23,7 @@ import {
   shinbundang,
   gyeonguiJungang,
   suinBundang,
-} from './lines';
-import type { LineData } from '../../lib/types/graph';
+} from './lines/index.js';
 
 /** 기본 역간 소요 시간 (초) */
 const DEFAULT_TRAVEL_TIME = 120; // 2분

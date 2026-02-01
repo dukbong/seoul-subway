@@ -1,4 +1,4 @@
-import type { LineData } from '../../../lib/types/graph';
+import type { LineData } from '../../../lib/types/graph.js';
 
 /** 9호선 역 데이터 (개화 ~ 중앙보훈병원) */
 export const line9: LineData = {

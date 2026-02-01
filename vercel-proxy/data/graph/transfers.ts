@@ -2,8 +2,8 @@
  * 환승역 데이터
  * 동일 역명에서 서로 다른 노선 간 환승 정보
  */
-import type { TransferGroup } from '../../lib/types/graph';
-import { createStationId } from './stations';
+import type { TransferGroup } from '../../lib/types/graph.js';
+import { createStationId } from './stations.js';
 
 /** 기본 환승 시간 (초) */
 const DEFAULT_WALK_TIME = 180; // 3분
