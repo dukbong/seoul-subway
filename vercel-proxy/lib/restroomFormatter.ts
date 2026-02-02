@@ -110,8 +110,8 @@ export function formatRestroomInfo(
 
   if (data.restrooms.length === 0) {
     const noData = lang === 'ko'
-      ? '화장실 정보가 없습니다.'
-      : 'No restroom information available.';
+      ? '서울교통공사 API에 해당 역의 화장실 정보가 등록되어 있지 않습니다.'
+      : 'No restroom data registered in Seoul Metro API for this station.';
     return `${header}\n\n${noData}`;
   }
 

@@ -132,7 +132,9 @@ function formatElevators(
   lang: Language
 ): string {
   if (elevators.length === 0) {
-    return lang === 'ko' ? '엘리베이터 정보가 없습니다.' : 'No elevator information available.';
+    return lang === 'ko'
+      ? '서울교통공사 API에 해당 역의 엘리베이터 정보가 등록되어 있지 않습니다.'
+      : 'No elevator data registered in Seoul Metro API for this station.';
   }
 
   const headers = lang === 'ko'
@@ -157,7 +159,9 @@ function formatEscalators(
   lang: Language
 ): string {
   if (escalators.length === 0) {
-    return lang === 'ko' ? '에스컬레이터 정보가 없습니다.' : 'No escalator information available.';
+    return lang === 'ko'
+      ? '서울교통공사 API에 해당 역의 에스컬레이터 정보가 등록되어 있지 않습니다.'
+      : 'No escalator data registered in Seoul Metro API for this station.';
   }
 
   const headers = lang === 'ko'
@@ -182,7 +186,9 @@ function formatWheelchairLifts(
   lang: Language
 ): string {
   if (lifts.length === 0) {
-    return lang === 'ko' ? '휠체어리프트 정보가 없습니다.' : 'No wheelchair lift information available.';
+    return lang === 'ko'
+      ? '서울교통공사 API에 해당 역의 휠체어리프트 정보가 등록되어 있지 않습니다.'
+      : 'No wheelchair lift data registered in Seoul Metro API for this station.';
   }
 
   const headers = lang === 'ko'
@@ -253,8 +259,8 @@ export function formatQuickExitInfo(
 
   if (data.quickExits.length === 0) {
     const noData = lang === 'ko'
-      ? '빠른하차 정보가 없습니다.'
-      : 'No quick exit information available.';
+      ? '서울교통공사 API에 해당 역의 빠른하차 정보가 등록되어 있지 않습니다.'
+      : 'No quick exit data registered in Seoul Metro API for this station.';
     return `${header}\n\n${noData}`;
   }
 

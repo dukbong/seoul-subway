@@ -132,8 +132,8 @@ export function formatRealtimeArrivals(
   const arrivals = data.realtimeArrivalList;
   if (!arrivals || arrivals.length === 0) {
     return lang === 'ko'
-      ? `[${stationKo}]\n\n도착 정보가 없습니다.`
-      : `[${getEnglishName(stationKo) || stationKo}]\n\nNo arrival information available.`;
+      ? `[${stationKo}]\n\n현재 도착 예정 열차가 없습니다. (심야 시간 또는 API 데이터 없음)`
+      : `[${getEnglishName(stationKo) || stationKo}]\n\nNo trains currently arriving. (Late night hours or no API data)`;
   }
 
   // Build header
