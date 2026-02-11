@@ -32,11 +32,19 @@ Seoul Subway information skill for Claude. **No API key required!**
 
 ## First Time Setup / 첫 사용 안내
 
-When prompted for proxy domain access, select:
+When prompted for proxy domain access:
 
-프록시 도메인 접근 확인 창이 뜨면 선택:
+프록시 도메인 접근 확인 창이 뜨면:
 
-**`Yes, and don't ask again for vercel-proxy-henna-eight.vercel.app`**
+**Recommended / 권장:** Select `Yes` to allow access for this session.
+
+이 세션에서 접근을 허용하려면 `Yes`를 선택하세요.
+
+> You may select `Yes, and don't ask again` for convenience if you trust the proxy.
+> See SKILL.md for data privacy details.
+>
+> 프록시 서버를 신뢰하는 경우 `Yes, and don't ask again`을 선택할 수 있습니다.
+> 데이터 프라이버시에 대한 자세한 내용은 SKILL.md를 참조하세요.
 
 ---
 
